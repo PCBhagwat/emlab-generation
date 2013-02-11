@@ -19,7 +19,7 @@
 		p:co2TradingImplemented="false" p:realRenewableDataImplemented="false"
 		p:iterationSpeedFactor="3" p:iterationSpeedCriterion="0.005"
 		p:capDeviationCriterion="0.03"
-		p:deletionOldPPDPBidsAndCashFlowsEnabled="true" p:deletionAge="5">
+		p:deletionOldPPDPBidsAndCashFlowsEnabled="true" p:deletionAge="8">
 	</bean>
 
 	<bean class="emlab.trend.TriangularTrend" id="demandGrowthTrendNL"
