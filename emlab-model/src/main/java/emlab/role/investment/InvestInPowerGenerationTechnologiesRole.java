@@ -163,9 +163,10 @@ public class InvestInPowerGenerationTechnologiesRole extends AbstractEnergyProdu
 					// technology);
 				} else if (plant.getActualInvestedCapital() * (1 - agent.getDebtRatioOfInvestments()) > agent
 						.getDownpaymentFractionOfCash() * agent.getCash()) {
-					// logger.warn(agent +
+					 //logger.warn(agent +
 					// " will not invest in {} technology as he does not have enough money for downpayment",
-					// technology); // TODO:
+					//technology); 
+					 // TODO:
 					// Modifier
 					// for
 					// investment
@@ -442,6 +443,8 @@ public class InvestInPowerGenerationTechnologiesRole extends AbstractEnergyProdu
 				double plantMarginalCost = determineExpectedMarginalCost(plant, fuelPrices, co2price);
 				marginalCostMap.put(plant, plantMarginalCost);
 				capacitySum += plant.getTechnology().getCapacity();
+				
+				
 			}
 
 			MapValueComparator comp = new MapValueComparator(marginalCostMap);
@@ -451,7 +454,7 @@ public class InvestInPowerGenerationTechnologiesRole extends AbstractEnergyProdu
 			long numberOfSegments = reps.segmentRepository.count();
 
 			double demandFactor = expectedDemand.get(market).doubleValue();
-
+			
 			// find expected prices per segment given merit order
 			for (SegmentLoad segmentLoad : market.getLoadDurationCurve()) {
 
@@ -463,6 +466,7 @@ public class InvestInPowerGenerationTechnologiesRole extends AbstractEnergyProdu
 
 				double segmentSupply = 0d;
 				double segmentPrice = 0d;
+				double totalCapacityAvailable = 0d;
 
 				for (Entry<PowerPlant, Double> plantCost : meritOrder.entrySet()) {
 					PowerPlant plant = plantCost.getKey();
@@ -470,7 +474,7 @@ public class InvestInPowerGenerationTechnologiesRole extends AbstractEnergyProdu
 					// Determine available capacity in the future in this
 					// segment
 					plantCapacity = plant.getExpectedAvailableCapacity(time, segmentLoad.getSegment(), numberOfSegments);
-
+					totalCapacityAvailable +=plantCapacity;
 					// logger.warn("Capacity of plant " + plant.toString() +
 					// " is " +
 					// plantCapacity/plant.getTechnology().getCapacity());
@@ -502,13 +506,14 @@ public class InvestInPowerGenerationTechnologiesRole extends AbstractEnergyProdu
 					}
 
 				}
-				//logger.warn("segmentSupply "+ segmentSupply +"expectedSLoad "+ expectedSegmentLoad + " Difference "+(capacitySum-expectedSegmentLoad) + "SR " + reserveVolume);
+				//logger.warn("segmentSupply "+ segmentSupply +"expectedSLoad "+ expectedSegmentLoad + " Difference "+(totalCapacityAvailable-expectedSegmentLoad) + "SR " + reserveVolume);
+				//logger.warn("installed Supply " + capacitySum + "Availble supply " + totalCapacityAvailable);
 				// If difference between demand and supply is less than equal to reserveVolume, set segment electric price = ReservePrice
-				if (segmentSupply >= expectedSegmentLoad && ((capacitySum-expectedSegmentLoad) <= (reserveVolume))){
+				if (segmentSupply >= expectedSegmentLoad && ((totalCapacityAvailable-expectedSegmentLoad) <= (reserveVolume))){
 					expectedElectricityPricesPerSegment.put(segmentLoad.getSegment(), reservePrice);
 					//logger.warn("Price: "+ expectedElectricityPricesPerSegment);
 				}
-				else if (segmentSupply >= expectedSegmentLoad && ((capacitySum-expectedSegmentLoad) > (reserveVolume))) {
+				else if (segmentSupply >= expectedSegmentLoad && ((totalCapacityAvailable-expectedSegmentLoad) > (reserveVolume))) {
 					expectedElectricityPricesPerSegment.put(segmentLoad.getSegment(), segmentPrice);
 					//logger.warn("Price: "+ expectedElectricityPricesPerSegment);
 				} 

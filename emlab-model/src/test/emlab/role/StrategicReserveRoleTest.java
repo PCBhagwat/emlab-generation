@@ -3,7 +3,6 @@ package emlab.role;
 import java.util.HashSet;
 import java.util.Set;
 
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +29,6 @@ import emlab.repository.ZoneRepository;
 import emlab.role.capacitymechanisms.ProcessAcceptedPowerPlantDispatchRoleinSR;
 import emlab.role.capacitymechanisms.StrategicReserveOperatorRole;
 import emlab.trend.TriangularTrend;
-
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration({"/emlab-test-context.xml"})

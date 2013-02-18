@@ -522,44 +522,50 @@
 		p:name="Power Plant Maintainer" />
 
 	<bean id="beneluxPowerPortfolio" class="emlab.domain.factory.ElectricityProducerFactory">
-		<property name="capacityMargin" value="0.25" />
+		<property name="capacityMargin" value="0.5" />
 		<property name="portfolioShares">
 			<map>
 				<entry>
 					<key>
 						<ref bean="coalPulverizedSuperCritical" />
 					</key>
-					<value>0.33</value>
+					<value>0.422</value>
 				</entry>
 				<entry>
 					<key>
 						<ref bean="CCGT" />
 					</key>
-					<value>0.40</value>
+					<value>0.1371</value>
 				</entry>
 				<entry>
 					<key>
 						<ref bean="OCGT" />
 					</key>
-					<value>0.16</value>
+					<value>0.10514</value>
 				</entry>
 				<entry>
 					<key>
 						<ref bean="biomassPGT" />
 					</key>
-					<value>0.01</value>
+					<value>0.04846</value>
 				</entry>
 				<entry>
 					<key>
 						<ref bean="nuclearPGT" />
 					</key>
-					<value>0.03</value>
+					<value>0.0731</value>
 				</entry>
 				<entry>
 					<key>
 						<ref bean="windPGT" />
 					</key>
-					<value>0.07</value>
+					<value>0.1551</value>
+				</entry>
+				<entry>
+					<key>
+						<ref bean="photovoltaicPGT" />
+					</key>
+					<value>0.0591</value>
 				</entry>
 			</map>
 		</property>
@@ -580,7 +586,7 @@
 		</property>
 	</bean>
 	<bean id="germanPowerPortfolio" class="emlab.domain.factory.ElectricityProducerFactory">
-		<property name="capacityMargin" value="0.50" />
+		<property name="capacityMargin" value="0.5" />
 		<property name="portfolioShares">
 			<map>
 				<entry>
@@ -593,7 +599,7 @@
 					<key>
 						<ref bean="CCGT" />
 					</key>
-					<value>0.1271</value>
+					<value>0.1371</value>
 				</entry>
 				<entry>
 					<key>
@@ -924,7 +930,7 @@
 	<bean id="projectPropertyConfigurer"
 		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="location"
-			value="classpath:scenarios/parametersG-SR.properties" />
+			value="classpath:scenarios/parametersH-SR.properties" />
 	</bean>
 
 </beans>
