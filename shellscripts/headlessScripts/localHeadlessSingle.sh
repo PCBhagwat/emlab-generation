@@ -15,12 +15,12 @@ fi
 
 ## the first parameter gives the jobname, the second the scenario-file including the xml file-ending
 ## Example sh localHeadless.sh example scenarioA-ToyModel.xml
-JOBNAME=ThermalMix2
+JOBNAME=ThermalMix3
 SCENARIO=scenarioB-ThermalMixDE
 SCENARIOPATH=file://$LOCALSCENARIOFOLDER
 
-mkdir $LOCALRESULTFOLDER/ThermalMix2
-cd $LOCALRESULTFOLDER/ThermalMix2
+mkdir $LOCALRESULTFOLDER/$JOBNAME
+cd $LOCALRESULTFOLDER/$JOBNAME
 if [ ! -z $3 ] 
 then 
     QUERYCOMMAND="-Dquery.file=$3"
