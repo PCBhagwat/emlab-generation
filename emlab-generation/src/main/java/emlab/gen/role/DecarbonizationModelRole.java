@@ -30,8 +30,10 @@ import emlab.gen.domain.agent.EnergyProducer;
 import emlab.gen.domain.agent.StrategicReserveOperator;
 import emlab.gen.domain.agent.TargetInvestor;
 import emlab.gen.domain.market.CommodityMarket;
+import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.repository.Reps;
+import emlab.gen.role.capacitymarket.SimpleCapacityMarketMainRole;
 import emlab.gen.role.capacitymechanisms.ProcessAcceptedPowerPlantDispatchRoleinSR;
 import emlab.gen.role.capacitymechanisms.StrategicReserveOperatorRole;
 import emlab.gen.role.investment.DismantlePowerPlantPastTechnicalLifetimeRole;
@@ -102,6 +104,8 @@ public class DecarbonizationModelRole extends AbstractRole<DecarbonizationModel>
     private StrategicReserveOperatorRole strategicReserveOperatorRole;
     @Autowired
     private ProcessAcceptedPowerPlantDispatchRoleinSR acceptedPowerPlantDispatchRoleinSR;
+    @Autowired
+    private SimpleCapacityMarketMainRole simpleCapacityMarketMainRole;
 
     @Autowired
     Reps reps;
@@ -150,13 +154,27 @@ public class DecarbonizationModelRole extends AbstractRole<DecarbonizationModel>
         logger.warn("        took: {} seconds.", timerMarket.seconds());
 
         /*
+         * Run Simple Capacity Market
+         */
+        if (model.isSimpleCapacityMarketEnabled()) {
+            timerMarket.reset();
+            timerMarket.start();
+            logger.warn(" 2. Run Simple Capacity Market");
+            for (CapacityMarket market : reps.capacityMarketRepository.findAll()) {
+                simpleCapacityMarketMainRole.act(market);
+            }
+            timerMarket.stop();
+            logger.warn("        took: {} seconds.", timerMarket.seconds());
+        }
+
+        /*
          * Submit and select long-term electricity contracts
          */
 
         if (model.isLongTermContractsImplemented()) {
             timerMarket.reset();
             timerMarket.start();
-            logger.warn("  2. Submit and select long-term electricity contracts");
+            logger.warn("  2a. Submit and select long-term electricity contracts");
             for (EnergyProducer producer : reps.genericRepository.findAllAtRandom(EnergyProducer.class)) {
                 submitLongTermElectricityContractsRole.act(producer);
                 //                producer.act(submitLongTermElectricityContractsRole);
