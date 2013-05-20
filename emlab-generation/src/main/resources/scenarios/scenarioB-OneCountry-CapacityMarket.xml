@@ -380,7 +380,7 @@
 		p:numberOfYearsBacklookingForForecasting="${numberOfYearsBacklookingForForecasting}"
 		p:investorMarket-ref="beneluxElectricitySpotMarket"/>
 
-	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestInPowerGenerationTechnologiesRole"/>
+	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestmentWithCapacityMarketRevenueRole"/>
 
 	<!-- PowerGenerationTechnology Node Limits -->
 	
