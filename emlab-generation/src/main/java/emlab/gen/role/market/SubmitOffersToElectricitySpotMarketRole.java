@@ -56,6 +56,9 @@ public class SubmitOffersToElectricitySpotMarketRole extends AbstractEnergyProdu
         long numberOfSegments = reps.segmentRepository.count();
         ElectricitySpotMarket market = producer.getInvestorMarket();
 
+        logger.warn("The ESM market is " + market.getName());
+        logger.warn("The load duration curve is " + market.getLoadDurationCurve());
+
         // find all my operating power plants
         for (PowerPlant plant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(producer, getCurrentTick())) {
 
