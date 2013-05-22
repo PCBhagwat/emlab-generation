@@ -33,11 +33,13 @@ import agentspring.role.Role;
 import emlab.gen.domain.agent.BigBank;
 import emlab.gen.domain.agent.EnergyProducer;
 import emlab.gen.domain.agent.PowerPlantManufacturer;
+import emlab.gen.domain.agent.Regulator;
 import emlab.gen.domain.agent.StrategicReserveOperator;
 import emlab.gen.domain.contract.CashFlow;
 import emlab.gen.domain.contract.Loan;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.ClearingPoint;
+import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.domain.market.electricity.Segment;
 import emlab.gen.domain.market.electricity.SegmentLoad;
@@ -79,7 +81,7 @@ NodeBacked {
     StrategicReserveOperatorRepository strategicReserveOperatorRepository;
 
     // market expectations
-	@Transient
+    @Transient
     Map<ElectricitySpotMarket, MarketInformation> marketInfoMap = new HashMap<ElectricitySpotMarket, MarketInformation>();
 
     @Override
@@ -242,6 +244,36 @@ NodeBacked {
 
                     double operatingProfit = expectedGrossProfit - fixedOMCost;
 
+                    Zone zoneTemp = market.getZone();
+                    Regulator regulator = reps.regulatorRepository.findRegulatorForZone(zoneTemp);
+                    CapacityMarket cMarket = reps.capacityMarketRepository.findCapacityMarketForZone(zoneTemp);
+
+                    double capacityRevenue = 0d;
+                    double sumCapacityRevenue = 0d;
+                    if ((agent.isSimpleCapacityMarketEnabled()) && (regulator != null)) {
+
+                        // CapacityMarketInformation
+                        // capacityMarketInformation = new
+                        // CapacityMarketInformation(market,
+                        // expectedDemand, futureTimePoint);
+
+                        // capacityRevenue =
+                        // capacityMarketInformation.expectedCapacityMarketPrice;
+                        long time = 0l;
+                        for (time = getCurrentTick(); time > getCurrentTick()
+                                - agent.getNumberOfYearsBacklookingForForecasting()
+                                && time >= 0; time = time - 1) {
+                            double capacityRevenueTemp = reps.capacityMarketRepository
+                                    .findOneClearingPointForTimeAndCapacityMarket(time, cMarket).getPrice();
+                            sumCapacityRevenue += capacityRevenueTemp;
+                        }
+                        capacityRevenue = sumCapacityRevenue / (getCurrentTick() - time);
+
+                    } else {
+                        capacityRevenue = 0;
+                    }
+
+                    operatingProfit = operatingProfit + capacityRevenue;
                     // TODO Alter discount rate on the basis of the amount
                     // in long-term contracts?
                     // TODO Alter discount rate on the basis of other stuff,
@@ -273,37 +305,37 @@ NodeBacked {
 
                     double discountedOpProfit = npv(discountedProjectCashInflow, wacc);
 
-                        // logger.warn("Agent {}  found that the projected discounted inflows for technology {} to be "
-                        // + discountedOpProfit,
-                        // agent, technology);
+                    // logger.warn("Agent {}  found that the projected discounted inflows for technology {} to be "
+                    // + discountedOpProfit,
+                    // agent, technology);
 
-                        double projectValue = discountedOpProfit + discountedCapitalCosts;
+                    double projectValue = discountedOpProfit + discountedCapitalCosts;
 
-                        // logger.warn(
-                        // "Agent {}  found the project value for technology {} to be "
-                        // + Math.round(projectValue /
-						// plant.getActualNominalCapacity()) +
-                        // " EUR/kW (running hours: "
-                        // + runningHours + "", agent, technology);
+                    // logger.warn(
+                    // "Agent {}  found the project value for technology {} to be "
+                    // + Math.round(projectValue /
+                    // plant.getActualNominalCapacity()) +
+                    // " EUR/kW (running hours: "
+                    // + runningHours + "", agent, technology);
 
-                        // double projectTotalValue = projectValuePerMW *
-						// plant.getActualNominalCapacity();
+                    // double projectTotalValue = projectValuePerMW *
+                    // plant.getActualNominalCapacity();
 
-                        // double projectReturnOnInvestment = discountedOpProfit
-                        // / (-discountedCapitalCosts);
+                    // double projectReturnOnInvestment = discountedOpProfit
+                    // / (-discountedCapitalCosts);
 
-                        /*
-                         * Divide by capacity, in order not to favour large power plants (which have the single largest NPV
-                         */
+                    /*
+                     * Divide by capacity, in order not to favour large power plants (which have the single largest NPV
+                     */
 
-						if (projectValue > 0 && projectValue / plant.getActualNominalCapacity() > highestValue) {
-							highestValue = projectValue / plant.getActualNominalCapacity();
-                            bestTechnology = plant.getTechnology();
-                        }
+                    if (projectValue > 0 && projectValue / plant.getActualNominalCapacity() > highestValue) {
+                        highestValue = projectValue / plant.getActualNominalCapacity();
+                        bestTechnology = plant.getTechnology();
                     }
-
                 }
+
             }
+        }
 
         if (bestTechnology != null) {
             // logger.warn("Agent {} invested in technology {} at tick " + getCurrentTick(), agent, bestTechnology);

@@ -387,7 +387,7 @@
 		<property name="investorMarket" ref="beneluxElectricitySpotMarket" />
 		</bean>
 
-	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestmentWithCapacityMarket2"/>
+	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestInPowerGenerationTechnologiesRole"/>
 
 	<!-- PowerGenerationTechnology Node Limits -->
 	
