@@ -65,7 +65,7 @@ import emlab.gen.util.MapValueComparator;
 @Configurable
 @NodeEntity
 public class InvestmentWithCapacityMarket2<T extends EnergyProducer> extends GenericInvestmentRole<T> implements
-Role<T>, NodeBacked {
+        Role<T>, NodeBacked {
 
     @Transient
     @Autowired
@@ -84,11 +84,10 @@ Role<T>, NodeBacked {
     Map<ElectricitySpotMarket, MarketInformation> marketInfoMap = new HashMap<ElectricitySpotMarket, MarketInformation>();
 
     @Transient
-    Map<String, Double> expectedESMOperatingRevenueMap = new HashMap<String, Double>();
+    Map<PowerPlant, Double> expectedESMOperatingRevenueMap = new HashMap<PowerPlant, Double>();
 
     @Transient
-    Map<String, Double> runningHoursMap = new HashMap<String, Double>();
-
+    Map<PowerPlant, Double> runningHoursMap = new HashMap<PowerPlant, Double>();
 
     @Override
     public void act(T agent) {
@@ -117,8 +116,6 @@ Role<T>, NodeBacked {
             }
             expectedDemand.put(elm, gtr.predict(futureTimePoint));
         }
-
-
 
         // Investment decision
         // for (ElectricitySpotMarket market :
@@ -165,8 +162,8 @@ Role<T>, NodeBacked {
 
             double fixedOMCost = calculateFixedOperatingCost(plant);
             double operatingProfitWithoutCapacityRevenue = expectedGrossProfit - fixedOMCost;
-            putOperatingProfitESM(plant.getName(), operatingProfitWithoutCapacityRevenue);
-            putRunningHours(plant.getName(), runningHours);
+            expectedESMOperatingRevenueMap.put(plant, operatingProfitWithoutCapacityRevenue);
+            runningHoursMap.put(plant, runningHours);
 
             // logger.warn("Hash map key " + plant.getName());
             // logger.warn("Hash map get value for key " +
@@ -239,7 +236,7 @@ Role<T>, NodeBacked {
 
             if ((expectedInstalledCapacityOfTechnology + plant.getActualNominalCapacity())
                     / (marketInformation.maxExpectedLoad + plant.getActualNominalCapacity()) > technology
-                    .getMaximumInstalledCapacityFractionInCountry()) {
+                        .getMaximumInstalledCapacityFractionInCountry()) {
                 // logger.warn(agent +
                 // " will not invest in {} technology because there's too much of this type in the market",
                 // technology);
@@ -270,7 +267,7 @@ Role<T>, NodeBacked {
                 // "expects technology {} to have {} running", technology,
                 // runningHours);
                 // expect to meet minimum running hours?
-                if (getRunningHours(plant.getName()) < plant.getTechnology().getMinimumRunningHours()) {
+                if (runningHoursMap.get(plant) < plant.getTechnology().getMinimumRunningHours()) {
                     // logger.warn(agent+
                     // " will not invest in {} technology as he expect to have {} running, which is lower then required",
                     // technology, runningHours);
@@ -290,7 +287,7 @@ Role<T>, NodeBacked {
                         capacityRevenue = 0;
                     }
 
-                    double operatingProfit = getOperatingProfit(plant.getName()) + capacityRevenue;
+                    double operatingProfit = expectedESMOperatingRevenueMap.get(plant) + capacityRevenue;
 
                     double wacc = (1 - agent.getDebtRatioOfInvestments()) * agent.getEquityInterestRate()
                             + agent.getDebtRatioOfInvestments() * agent.getLoanInterestRate();
@@ -381,31 +378,6 @@ Role<T>, NodeBacked {
     }
 
     // }
-
-    // stores expected gross profit for a power plant for a tick
-    public void putOperatingProfitESM(String plantName, double revenue) {
-        logger.warn("Putting Operating Profit ESM of" + revenue);
-        expectedESMOperatingRevenueMap.put(plantName, revenue);
-
-    }
-
-    // returns expected gross profit for a power plant for a tick
-    public double getOperatingProfit(String plantName) {
-        logger.warn("Trying to get operating Profit ESM of" + plantName);
-        return expectedESMOperatingRevenueMap.get(plantName);
-    }
-
-    // stores running hours for a power plant for a tick
-    public void putRunningHours(String plantName, Double hours) {
-        logger.warn("Store Running hours of {} for plant" + plantName, hours);
-        runningHoursMap.put(plantName, hours);
-    }
-
-    // returns running hours for a power plant for a tick
-    public double getRunningHours(String plantName) {
-        logger.warn("Trying to get Running hours for plant " + plantName);
-        return runningHoursMap.get(plantName);
-    }
 
     // Creates n downpayments of equal size in each of the n building years of a
     // power plant
@@ -546,24 +518,33 @@ Role<T>, NodeBacked {
 
             expectedCMDemandTarget = regulator.getReserveMargin() * peakSegmentLoad * demandFactor;
 
+            // call a new market information here /ORR Send electricity price as
+            // an argument to this role!!! and then
+            // compute (only) revenue for every plant in this method.
+
             // get merit order for this market
             double marginalCostCapacity = 0d;
             for (PowerPlant plant : reps.powerPlantRepository.findExpectedOperationalPowerPlantsInMarket(market,
                     futureTimePoint)) {
-                if (getOperatingProfit(plant.getName()) >= 0)
+
+                // compute ESM revenue here...
+                if (expectedESMOperatingRevenueMap.get(plant) >= 0)
                     marginalCostCapacity = 0;
                 else
-                    marginalCostCapacity = -getOperatingProfit(plant.getName());
-                marginalCMCostMap.put(plant, marginalCostCapacity);
+                    // marginalCostCapacity =
+                    // -getOperatingProfit(plant.getName());
+                    marginalCMCostMap.put(plant, marginalCostCapacity);
                 capacitySum += plant.getActualNominalCapacity();
             }
             MapValueComparator comp = new MapValueComparator(marginalCMCostMap);
+            // ...........make this merit order an array list!!!
             meritOrder = new TreeMap<PowerPlant, Double>(comp);
             meritOrder.putAll(marginalCMCostMap);
 
             // get capacity price for this merit order, with the demandTarget
             long numberOfSegments = reps.segmentRepository.count();
 
+            // use array list here!! :)
             for (Entry<PowerPlant, Double> plantCost : meritOrder.entrySet()) {
                 PowerPlant plant = plantCost.getKey();
                 // Determine max available capacity in the future
@@ -576,11 +557,11 @@ Role<T>, NodeBacked {
                             + ((regulator.getCapacityMarketPriceCap() - plantCost.getValue())
                                     * (regulator.getReserveDemandUpperMargin() + regulator
                                             .getReserveDemandLowerMargin()) * expectedCMDemandTarget)
-                                            / regulator.getCapacityMarketPriceCap();
+                            / regulator.getCapacityMarketPriceCap();
 
                     if (supply < expectedCMDemand) {
                         supply += plantCapacity;
-                        capacityPrice = -getOperatingProfit(plant.getName());
+                        // capacityPrice = -getOperatingProfit(plant.getName());
                     }
 
                 }

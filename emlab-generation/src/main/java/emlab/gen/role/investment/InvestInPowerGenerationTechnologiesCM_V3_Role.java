@@ -39,7 +39,6 @@ import emlab.gen.domain.contract.CashFlow;
 import emlab.gen.domain.contract.Loan;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.ClearingPoint;
-import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.domain.market.electricity.Segment;
 import emlab.gen.domain.market.electricity.SegmentLoad;
@@ -65,7 +64,7 @@ import emlab.gen.util.MapValueComparator;
  */
 @Configurable
 @NodeEntity
-public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> extends GenericInvestmentRole<T>
+public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProducer> extends GenericInvestmentRole<T>
         implements Role<T>, NodeBacked {
 
     @Transient
@@ -257,22 +256,14 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
 
                     Zone zoneTemp = market.getZone();
                     Regulator regulator = reps.regulatorRepository.findRegulatorForZone(zoneTemp);
-                    CapacityMarket cMarket = reps.capacityMarketRepository.findCapacityMarketForZone(zoneTemp);
 
                     double capacityRevenue = 0d;
-                    double sumCapacityRevenue = 0d;
                     if ((agent.isSimpleCapacityMarketEnabled()) && (regulator != null)) {
 
-                        long time = 0l;
-                        for (time = getCurrentTick(); time > getCurrentTick()
-                                - agent.getNumberOfYearsBacklookingForForecasting()
-                                && time >= 0; time = time - 1) {
-                            double capacityRevenueTemp = reps.capacityMarketRepository
-                                    .findOneClearingPointForTimeAndCapacityMarket(time, cMarket).getPrice();
-                            sumCapacityRevenue += capacityRevenueTemp;
-                        }
-                        capacityRevenue = sumCapacityRevenue / (getCurrentTick() - time);
+                        CapacityMarketInformation capacityMarketInformation = new CapacityMarketInformation(market,
+                                marketInformation, expectedDemand, agent, expectedCO2Price.get(market), futureTimePoint);
 
+                        capacityRevenue = capacityMarketInformation.expectedCapacityMarketPrice;
                     } else {
                         capacityRevenue = 0;
                     }
@@ -479,6 +470,124 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
             }
         }
         return null;
+    }
+
+    private class CapacityMarketInformation {
+
+        double expectedCapacityMarketPrice;
+
+        double peakSegmentLoad = 0;
+        double capacitySum;
+        Map<PowerPlant, Double> marginalCMCostMap = new HashMap<PowerPlant, Double>();
+        Map<PowerPlant, Double> meritOrder;
+
+        CapacityMarketInformation(ElectricitySpotMarket market, MarketInformation marketInformation,
+                Map<ElectricitySpotMarket, Double> expectedDemand, EnergyProducer agent, double expectedCO2Price,
+                long futureTimePoint) {
+            Map<Substance, Double> expectedFuelPrices = predictFuelPrices(agent, futureTimePoint);
+            double expectedCMDemandTarget;
+            double expectedCMDemand = 0d;
+            double demandFactor = expectedDemand.get(market).doubleValue();
+            Zone zone = market.getZone();
+            double supply = 0d;
+            double capacityPrice = 0d;
+            Regulator regulator = reps.capacityMarketRepository.findRegulatorForZone(zone);
+            // calculate expected demand for Capacity Market
+            for (SegmentLoad segmentLoad : market.getLoadDurationCurve()) {
+                if (segmentLoad.getBaseLoad() > peakSegmentLoad) {
+                    peakSegmentLoad = segmentLoad.getBaseLoad();
+
+                }
+            }
+
+            logger.warn("Capacity Market Information being computed");
+
+            expectedCMDemandTarget = regulator.getReserveMargin() * peakSegmentLoad * demandFactor;
+
+            // call a new market information here /ORR Send electricity price as
+            // an argument to this role!!! and then
+            // compute (only) revenue for every plant in this method.
+
+            // get merit order for this market
+            double marginalCostCapacity = 0d;
+            for (PowerPlant plant : reps.powerPlantRepository.findExpectedOperationalPowerPlantsInMarket(market,
+                    futureTimePoint)) {
+
+                // COMPUTING ESM REVENUE for this plant
+                logger.warn("calculating ESM Revenue for plant" + plant.getName());
+
+                Map<Substance, Double> myFuelPrices = new HashMap<Substance, Double>();
+                for (Substance fuel : plant.getTechnology().getFuels()) {
+                    myFuelPrices.put(fuel, expectedFuelPrices.get(fuel));
+                }
+                Set<SubstanceShareInFuelMix> fuelMix = calculateFuelMix(plant, myFuelPrices, expectedCO2Price);
+                plant.setFuelMix(fuelMix);
+
+                double expectedMarginalCost = determineExpectedMarginalCost(plant, expectedFuelPrices, expectedCO2Price);
+                double expectedGrossProfit = 0d;
+
+                long numberOfSegments = reps.segmentRepository.count();
+
+                for (SegmentLoad segmentLoad : market.getLoadDurationCurve()) {
+                    double expectedElectricityPrice = marketInformation.expectedElectricityPricesPerSegment
+                            .get(segmentLoad.getSegment());
+                    double hours = segmentLoad.getSegment().getLengthInHours();
+                    if (expectedMarginalCost <= expectedElectricityPrice) {
+                        expectedGrossProfit += (expectedElectricityPrice - expectedMarginalCost)
+                                * hours
+                                * plant.getAvailableCapacity(futureTimePoint, segmentLoad.getSegment(),
+                                        numberOfSegments);
+                    }
+                }
+                double fixedOMCost = calculateFixedOperatingCost(plant);// /
+                double operatingProfit = expectedGrossProfit - fixedOMCost;
+                // END COMPUTATION OF ESM REVENUE HERE
+                if (operatingProfit >= 0)
+                    marginalCostCapacity = 0;
+                else
+                    marginalCMCostMap.put(plant, marginalCostCapacity);
+                capacitySum += plant.getActualNominalCapacity();
+            }
+            MapValueComparator comp = new MapValueComparator(marginalCMCostMap);
+            // ...........make this merit order an array list!!!
+            meritOrder = new TreeMap<PowerPlant, Double>(comp);
+            meritOrder.putAll(marginalCMCostMap);
+
+            // get capacity price for this merit order, with the demandTarget
+            long numberOfSegments = reps.segmentRepository.count();
+
+            // use array list here!! :)
+            for (Entry<PowerPlant, Double> plantCost : meritOrder.entrySet()) {
+                PowerPlant plant = plantCost.getKey();
+                double plantCapacity = plant.getExpectedAvailableCapacity(futureTimePoint, null, numberOfSegments);
+
+                if (plantCost.getValue() < regulator.getCapacityMarketPriceCap()) {
+
+                    expectedCMDemand = expectedCMDemandTarget
+                            * (1 - regulator.getReserveDemandLowerMargin())
+                            + ((regulator.getCapacityMarketPriceCap() - plantCost.getValue())
+                                    * (regulator.getReserveDemandUpperMargin() + regulator
+                                            .getReserveDemandLowerMargin()) * expectedCMDemandTarget)
+                            / regulator.getCapacityMarketPriceCap();
+
+                    if (supply < expectedCMDemand) {
+                        supply += plantCapacity;
+                        capacityPrice = plantCost.getValue();
+                    }
+
+                }
+
+            }
+            if (supply >= expectedCMDemand) {
+                expectedCapacityMarketPrice = capacityPrice;
+            } else {
+                capacityPrice = regulator.getCapacityMarketPriceCap()
+                        * (1 + ((expectedCMDemandTarget * (1 - regulator.getReserveDemandLowerMargin()) - supply) / ((regulator
+                                .getReserveDemandUpperMargin() + regulator.getReserveDemandLowerMargin()) * expectedCMDemandTarget)));
+                expectedCapacityMarketPrice = capacityPrice;
+            }
+
+        }
     }
 
     private class MarketInformation {

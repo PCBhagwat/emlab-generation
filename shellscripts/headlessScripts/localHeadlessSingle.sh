@@ -5,8 +5,8 @@
 ########################################################################
 USAGE="Provide name of run and name of scenario file."
 #Load configuration script to substitute
-if [ -f scriptConfigurations.cfg ];then 
-	. scriptConfigurations.cfg
+if [ -f ~/emlab-generation/shellscripts/headlessScripts/scriptConfigurations.cfg ];then 
+	. ~/emlab-generation/shellscripts/headlessScripts/scriptConfigurations.cfg 
 	HOME=$REMOTERESULTFOLDER
 else
     echo "Define scriptConfigurations.cfg, by changing the template. Exiting script."
@@ -15,8 +15,8 @@ fi
 
 ## the first parameter gives the jobname, the second the scenario-file including the xml file-ending
 ## Example sh localHeadless.sh example scenarioA-ToyModel.xml
-JOBNAME=$1
-SCENARIO=$2
+JOBNAME=CapMech2
+SCENARIO=scenarioB-OneCountry-CapacityMarket
 SCENARIOPATH=file://$LOCALSCENARIOFOLDER
 
 mkdir $LOCALRESULTFOLDER/$JOBNAME
@@ -28,7 +28,7 @@ else
     QUERYCOMMAND=""
 fi
 
-java -d64 -server -Xmx3072m -Drun.id=$JOBNAME -DSCENARIO_FOLDER=$SCENARIOPATH -Dresults.path=$LOCALRESULTFOLDER/$JOBNAME -Dscenario.file=$SCENARIO".xml" $QUERYCOMMAND -jar $LOCALJARFILE >  $JOBNAME.log
+java -d64 -server -Xmx2048m -Drun.id=$JOBNAME -DSCENARIO_FOLDER=$SCENARIOPATH -Dresults.path=$LOCALRESULTFOLDER/$JOBNAME -Dscenario.file=$SCENARIO".xml" $QUERYCOMMAND -jar $LOCALJARFILE >  $JOBNAME.log
 rm -rf /tmp/ramdisk/emlab.gen-db/$JOBNAME
 
 #mv simulation.log $JOBNAME.log
