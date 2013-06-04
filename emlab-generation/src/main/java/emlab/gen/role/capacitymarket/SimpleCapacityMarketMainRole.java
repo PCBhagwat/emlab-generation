@@ -64,12 +64,12 @@ public class SimpleCapacityMarketMainRole extends AbstractRole<CapacityMarket> i
                 .findAllEnergyProducersExceptForRenewableTargetInvestorsAtRandom()) {
             submitCapacityBidToMarketRole.act(producer);
         }
-        logger.warn("capacity bids submitted");
+        logger.warn("******************capacity bids submitted****************************");
 
         // Clear capacity market
         clearCapacityMarketRole.act(regulator);
 
-        logger.warn("Capacity Market cleared");
+        logger.warn("************************Capacity Market cleared******************************");
 
         // ensure cash flows
         paymentFromConsumerToProducerforCapacityRole.act(market);

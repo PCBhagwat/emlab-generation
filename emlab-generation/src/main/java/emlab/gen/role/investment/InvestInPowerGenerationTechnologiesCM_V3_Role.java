@@ -500,7 +500,7 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
                 }
             }
 
-            logger.warn("Capacity Market Information being computed");
+            // logger.warn("Capacity Market Information being computed");
 
             expectedCMDemandTarget = regulator.getReserveMargin() * peakSegmentLoad * demandFactor;
 
@@ -514,7 +514,8 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
                     futureTimePoint)) {
 
                 // COMPUTING ESM REVENUE for this plant
-                logger.warn("calculating ESM Revenue for plant" + plant.getName());
+                // logger.warn("calculating ESM Revenue for plant" +
+                // plant.getName());
 
                 Map<Substance, Double> myFuelPrices = new HashMap<Substance, Double>();
                 for (Substance fuel : plant.getTechnology().getFuels()) {

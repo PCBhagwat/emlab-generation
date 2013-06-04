@@ -50,22 +50,16 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
     @Override
     @Transactional
     public void act(EnergyProducer producer) {
-        logger.warn("Itsme");
+        logger.warn("***********Submitting Bid Role for Energy Producer ********" + producer.getName());
 
         for (PowerPlant plant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(producer, getCurrentTick())) {
-
-            logger.warn("Power Plant is " + plant.getName());
 
             // get market for the plant by zone
             CapacityMarket market = reps.capacityMarketRepository.findCapacityMarketForZone(plant.getLocation()
                     .getZone());
 
-            // logger.warn("Capacity Market is " + market.getName());
-
             ElectricitySpotMarket eMarket = reps.marketRepository.findElectricitySpotMarketForZone(plant.getLocation()
                     .getZone());
-
-            logger.warn("Electricity Market is " + eMarket.getName());
 
             // compute bid price as (fixedOMCost - elecricityMarketRevenue), if
             // the difference is positive. Else if negative, bid at zero.
@@ -78,13 +72,12 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
             // electricity spot market prices
             long numberOfSegments = reps.segmentRepository.count();
             double electricityMarketRevenue = 0d;
-            // double runningHours = 0d;
-
-            // double mc = calculateMarginalCostExclCO2MarketCost(plant);
+            double mc = calculateMarginalCostExclCO2MarketCost(plant);
             double expectedElectricityPrice = 0;
-            double mc = 0;
+            // double mc = 0;
             for (SegmentLoad segmentLoad : eMarket.getLoadDurationCurve()) {
 
+                logger.warn("Segment Load is " + segmentLoad.getBaseLoad());
                 if (getCurrentTick() == 0) {
                     mc = 0;
                     expectedElectricityPrice = 0;
@@ -96,14 +89,20 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                 }
 
                 double hours = segmentLoad.getSegment().getLengthInHours();
+                logger.warn("Number of hours per segment is" + hours);
+
                 if (mc <= expectedElectricityPrice) {
-                    // runningHours += hours;
                     electricityMarketRevenue += (expectedElectricityPrice - mc) * hours
                             * plant.getAvailableCapacity(getCurrentTick(), segmentLoad.getSegment(), numberOfSegments);
                 }
+                logger.warn("available capacity of plant is "
+                        + plant.getAvailableCapacity(getCurrentTick(), segmentLoad.getSegment(), numberOfSegments));
+                logger.warn("revenue from el market for this segment is" + electricityMarketRevenue);
+
             }
 
             double mcCapacity = fixedOnMCost - electricityMarketRevenue;
+            logger.warn("Marginal cost of capacity is " + mcCapacity);
 
             if (mcCapacity < 0) {
                 bidPrice = 0d;
