@@ -57,11 +57,16 @@ public interface SegmentLoadRepository extends GraphRepository<SegmentLoad> {
     @Query(value = "segID = g.v(segment).segmentID;"
             + "double baseLoad = g.v(market).out('SEGMENT_LOAD').as('x').out('SEGMENTLOAD_SEGMENT').filter{it.segmentID==segID}.back('x').baseLoad.next();"
             + "return baseLoad", type = QueryType.Gremlin)
-    public double returnSegmentBaseLoadBySegmentAndMarket(@Param("segment") Segment segment, @Param("market") ElectricitySpotMarket market);
+    public double returnSegmentBaseLoadBySegmentAndMarket(@Param("segment") Segment segment,
+            @Param("market") ElectricitySpotMarket market);
 
     // peak Load by Zone
 
     @Query(value = "g.v(zone).in('ZONE').filter{it.__type__=='emlab.gen.domain.market.electricity.ElectricitySpotMarket'}.outE('SEGMENT_LOAD').inV.max{it.baseLoad}.baseLoad", type = QueryType.Gremlin)
     double peakLoadbyZoneMarketandTime(@Param("zone") Zone zone, @Param("market") ElectricitySpotMarket market);
+
+    @Query(value = "g.v(zone).in('ZONE').filter{it.__type__=='emlab.gen.domain.market.electricity.ElectricitySpotMarket'}.out('SEGMENT_LOAD').filter{it.baseload==peakLoad}.segment", type = QueryType.Gremlin)
+    public Segment peaksegmentLoadbyZoneMarketandTime(@Param("zone") Zone zone,
+            @Param("market") ElectricitySpotMarket market, @Param("peakLoad") double peakLoad);
 
 }

@@ -165,6 +165,7 @@ public class SubmitCapacityBidToMarketRoleTest {
         pp1.setTechnology(coal1);
         pp1.setOwner(e1);
         pp1.setActualFixedOperatingCost(99000);
+        pp1.setActualNominalCapacity(700);
         pp1.setActualPermittime(0);
         pp1.setActualLeadtime(0);
         pp1.setConstructionStartTime(-1);
@@ -179,6 +180,7 @@ public class SubmitCapacityBidToMarketRoleTest {
         pp2.setDismantleTime(99);
         pp2.setConstructionStartTime(-1);
         pp2.setTechnology(coal2);
+        pp2.setActualNominalCapacity(700);
         pp2.setOwner(e2);
         pp2.setActualFixedOperatingCost(111000);
         pp2.setLocation(location);
@@ -191,6 +193,7 @@ public class SubmitCapacityBidToMarketRoleTest {
         pp3.setActualLeadtime(0);
         pp3.setConstructionStartTime(-1);
         pp3.setTechnology(gas1);
+        pp3.setActualNominalCapacity(600);
         pp3.setOwner(e2);
         pp3.setActualFixedOperatingCost(56000);
 
@@ -203,6 +206,7 @@ public class SubmitCapacityBidToMarketRoleTest {
         pp4.setConstructionStartTime(-1);
         pp4.setDismantleTime(99);
         pp4.setTechnology(gas2);
+        pp4.setActualNominalCapacity(600);
         pp4.setOwner(e1);
         pp4.setActualFixedOperatingCost(65000);
         pp4.setLocation(location);
@@ -214,6 +218,7 @@ public class SubmitCapacityBidToMarketRoleTest {
         pp5.setConstructionStartTime(-1);
         pp5.setDismantleTime(99);
         pp5.setTechnology(gas1);
+        pp5.setActualNominalCapacity(600);
         pp5.setOwner(e2);
         pp5.setActualFixedOperatingCost(56000);
         pp5.setLocation(location);
@@ -225,6 +230,7 @@ public class SubmitCapacityBidToMarketRoleTest {
         pp6.setConstructionStartTime(-1);
         pp6.setDismantleTime(99);
         pp6.setTechnology(gas2);
+        pp6.setActualNominalCapacity(600);
         pp6.setOwner(e1);
         pp6.setActualFixedOperatingCost(65000);
         pp6.setLocation(location);

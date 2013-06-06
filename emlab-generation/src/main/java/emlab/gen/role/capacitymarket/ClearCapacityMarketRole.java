@@ -76,9 +76,9 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                         * (1 - regulator.getReserveDemandLowerMargin())
                         + ((regulator.getCapacityMarketPriceCap() - currentCDP.getPrice())
                                 * (regulator.getReserveDemandUpperMargin() + regulator.getReserveDemandLowerMargin()) * regulator
-                                .getDemandTarget()) / regulator.getCapacityMarketPriceCap();
+                                    .getDemandTarget()) / regulator.getCapacityMarketPriceCap();
 
-                logger.warn("Price of this cdp is " + currentCDP.getPrice());
+                // logger.warn("Price of this cdp is " + currentCDP.getPrice());
                 // logger.warn("Demand at this cdp is " + demand);
 
                 if (isTheMarketCleared == false) {
@@ -87,8 +87,9 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                         currentCDP.setStatus(Bid.ACCEPTED);
                         currentCDP.setAcceptedAmount(currentCDP.getAmount());
                         sumofSupplyBidsAccepted = sumofSupplyBidsAccepted + currentCDP.getAmount();
-                        logger.warn("Price of this cdp is " + currentCDP.getPrice());
-                        logger.warn("accepted price" + acceptedPrice);
+                        // logger.warn("Price of this cdp is " +
+                        // currentCDP.getPrice());
+                        // logger.warn("accepted price" + acceptedPrice);
                     }
 
                     else if (demand - (sumofSupplyBidsAccepted + currentCDP.getAmount()) < clearingEpsilon) {
@@ -99,7 +100,7 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                         sumofSupplyBidsAccepted = sumofSupplyBidsAccepted + currentCDP.getAcceptedAmount();
                         isTheMarketCleared = true;
 
-                        logger.warn("accepted price" + acceptedPrice);
+                        // logger.warn("accepted price" + acceptedPrice);
 
                     }
 
@@ -112,24 +113,26 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                     currentCDP.setAcceptedAmount(0);
                 }
 
-                logger.warn("Cumulatively Accepted Supply " + sumofSupplyBidsAccepted);
+                // logger.warn("Cumulatively Accepted Supply " +
+                // sumofSupplyBidsAccepted);
                 currentCDP.persist();
 
             }
         }
+        logger.warn("Demand for the capacity market at tick {} is " + demand, getCurrentTick());
 
         CapacityClearingPoint clearingPoint = new CapacityClearingPoint();
         if (isTheMarketCleared == true) {
             // sumofSupplyBidsAccepted = demand;
-            logger.warn("accepted price at the clearing point, with the market cleared" + acceptedPrice);
+            logger.warn("MARKET CLEARED at price" + acceptedPrice);
             clearingPoint.setPrice(acceptedPrice);
             clearingPoint.setVolume(sumofSupplyBidsAccepted);
             clearingPoint.setTime(getCurrentTick());
             clearingPoint.setCapacityMarket(market);
             clearingPoint.persist();
 
-            logger.warn("Clearing point Price" + clearingPoint.getPrice());
-            logger.warn("Clearing Point Volume" + clearingPoint.getVolume());
+            logger.warn("Clearing point Price {} and volume " + clearingPoint.getVolume(), clearingPoint.getPrice());
+
         } else {
             acceptedPrice = regulator.getCapacityMarketPriceCap()
                     * (1 + ((regulator.getDemandTarget() * (1 - regulator.getReserveDemandLowerMargin()) - sumofSupplyBidsAccepted) / ((regulator
@@ -140,7 +143,8 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
             clearingPoint.setTime(getCurrentTick());
             clearingPoint.setCapacityMarket(market);
             clearingPoint.persist();
-            logger.warn("accepted price at the clearing point with market uncleared" + acceptedPrice);
+            logger.warn("MARKET UNCLEARED at price" + clearingPoint.getPrice());
+            logger.warn("Clearing point Price {} and volume " + clearingPoint.getVolume(), clearingPoint.getPrice());
 
         }
         // clearingPoint.persist();

@@ -35,7 +35,7 @@ import emlab.gen.role.market.AbstractMarketRole;
  */
 @RoleComponent
 public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarketRole<CapacityMarket> implements
-Role<CapacityMarket> {
+        Role<CapacityMarket> {
 
     @Autowired
     Reps reps;
@@ -53,14 +53,12 @@ Role<CapacityMarket> {
                     .findOneClearingPointForTimeAndCapacityMarket(getCurrentTick(), capacityMarket);
 
             // double price = capacityClearingPoint.getPrice();
-            logger.warn("consumer is " + capacityMarket.getConsumer().getName());
-            logger.warn("the bidder is " + plan.getBidder().getName());
-            logger.warn("Amount to be transferred is " + plan.getAcceptedAmount());
-            logger.warn("Clearing Point price is " + capacityClearingPoint.getPrice());
-            logger.warn("plant related to plant" + plan.getPlant().getName());
+
             reps.nonTransactionalCreateRepository.createCashFlow(capacityMarket.getConsumer(), plan.getBidder(),
                     plan.getAcceptedAmount() * capacityClearingPoint.getPrice(), CashFlow.SIMPLE_CAPACITY_MARKET,
                     getCurrentTick(), plan.getPlant());
+            logger.warn("Cash flow from consumer {} to Producer {} of value {} " + plan.getAcceptedAmount()
+                    * capacityClearingPoint.getPrice(), plan.getBidder(), capacityMarket.getConsumer());
         }
 
     }

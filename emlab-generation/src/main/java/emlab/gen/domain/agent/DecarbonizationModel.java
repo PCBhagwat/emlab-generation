@@ -32,7 +32,7 @@ public class DecarbonizationModel extends AbstractAgent implements Agent {
     private double capDeviationCriterion;
     private String name;
 
-    @SimulationParameter(label = "Simulation Length", from = 0, to = 75)
+    @SimulationParameter(label = "Simulation Length", from = 0, to = 100)
     private double simulationLength;
 
     @SimulationParameter(label = "CO2 Trading")
