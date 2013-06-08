@@ -26,6 +26,7 @@ import emlab.gen.domain.market.Bid;
 import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
+import emlab.gen.domain.market.electricity.PowerPlantDispatchPlan;
 import emlab.gen.domain.market.electricity.SegmentLoad;
 import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.Reps;
@@ -83,57 +84,50 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
 
                 // ********** to check if plant was in the merit order or
                 // not******
-                // * double peakLoad =
-                // reps.segmentLoadRepository.peakLoadbyZoneMarketandTime(plant.getLocation().getZone(),
-                // * eMarket);
-                // * Segment peakSegment =
-                // reps.segmentLoadRepository.peaksegmentLoadbyZoneMarketandTime(plant.getLocation()
-                // * .getZone(), eMarket, peakLoad);
-                // *PowerPlantDispatchPlan ppdp =
-                // reps.powerPlantDispatchPlanRepository
-                // *
-                // .findOnePowerPlantDispatchPlanForPowerPlantForSegmentForTime(plant,
-                // peakSegment,
-                // * getCurrentTick() - 1);
+                long tickTemp = (getCurrentTick() - 1);
+                // logger.warn("current tick - 1 is " + tickTemp);
 
-                // *if (ppdp.getSRstatus() == -9) {
-                electricityMarketRevenue = 0d;
-                // *} else {
-                // compute revenue from the energy market, using previous
-                // tick's
-                // electricity spot market prices
+                PowerPlantDispatchPlan ppdp = reps.powerPlantDispatchPlanRepository
+                        .findOnePowerPlantDispatchPlanForPeakSegmentGivenPowerPlantAndTime(plant, tickTemp);
 
-                mc = calculateMarginalCostExclCO2MarketCost(plant);
-                for (SegmentLoad segmentLoad : eMarket.getLoadDurationCurve()) {
-                    // logger.warn("Segment Load is " +
-                    // segmentLoad.getBaseLoad());
+                if ((ppdp != null) && (ppdp.getStatus() == -1)) {
+                    electricityMarketRevenue = 0d;
+                } else {
+                    // compute revenue from the energy market, using previous
+                    // tick's
+                    // electricity spot market prices
 
-                    expectedElectricityPrice = reps.segmentClearingPointRepository
-                            .findOneSegmentClearingPointForMarketSegmentAndTime(getCurrentTick() - 1,
-                                    segmentLoad.getSegment(), eMarket).getPrice();
+                    mc = calculateMarginalCostExclCO2MarketCost(plant);
+                    for (SegmentLoad segmentLoad : eMarket.getLoadDurationCurve()) {
+                        // logger.warn("Segment Load is " +
+                        // segmentLoad.getBaseLoad());
 
-                    double hours = segmentLoad.getSegment().getLengthInHours();
-                    // logger.warn("Number of hours per segment is" +
-                    // hours);
+                        expectedElectricityPrice = reps.segmentClearingPointRepository
+                                .findOneSegmentClearingPointForMarketSegmentAndTime(getCurrentTick() - 1,
+                                        segmentLoad.getSegment(), eMarket).getPrice();
 
-                    if (mc <= expectedElectricityPrice) {
-                        electricityMarketRevenue += (expectedElectricityPrice - mc)
-                                * hours
-                                * plant.getAvailableCapacity(getCurrentTick(), segmentLoad.getSegment(),
-                                        numberOfSegments);
+                        double hours = segmentLoad.getSegment().getLengthInHours();
+                        // logger.warn("Number of hours per segment is" +
+                        // hours);
+
+                        if (mc <= expectedElectricityPrice) {
+                            electricityMarketRevenue += (expectedElectricityPrice - mc)
+                                    * hours
+                                    * plant.getAvailableCapacity(getCurrentTick(), segmentLoad.getSegment(),
+                                            numberOfSegments);
+                        }
+                        // logger.warn("available capacity of plant is "
+                        // + plant.getAvailableCapacity(getCurrentTick(),
+                        // segmentLoad.getSegment(), numberOfSegments));
+                        // logger.warn("cumulative revenue from el market is" +
+                        // electricityMarketRevenue);
+
                     }
-                    // logger.warn("available capacity of plant is "
-                    // + plant.getAvailableCapacity(getCurrentTick(),
-                    // segmentLoad.getSegment(), numberOfSegments));
-                    // logger.warn("cumulative revenue from el market is" +
-                    // electricityMarketRevenue);
-
                 }
-                // * }
             }
 
             double mcCapacity = fixedOnMCost - electricityMarketRevenue;
-            logger.warn("Marginal cost of capacity is " + mcCapacity);
+            // logger.warn("Marginal cost of capacity is " + mcCapacity);
 
             if (mcCapacity < 0) {
                 bidPrice = 0d;
@@ -154,8 +148,8 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
 
             // logger.info("Submitted {} for iteration {} to capacity market",
             // plan);
-            logger.warn(" Submitted bid at price" + bidPrice);
-            logger.warn(" And capacity" + capacity);
+            // logger.warn(" Submitted bid at price" + bidPrice);
+            // logger.warn(" And capacity" + capacity);
 
         }
     }

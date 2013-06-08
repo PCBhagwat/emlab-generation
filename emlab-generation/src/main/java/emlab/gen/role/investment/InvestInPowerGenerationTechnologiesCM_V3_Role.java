@@ -260,6 +260,7 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
                     double capacityRevenue = 0d;
                     if ((agent.isSimpleCapacityMarketEnabled()) && (regulator != null)) {
 
+                        logger.warn("The plant is eligible for capacity market");
                         CapacityMarketInformation capacityMarketInformation = new CapacityMarketInformation(market,
                                 marketInformation, expectedDemand, agent, expectedCO2Price.get(market), futureTimePoint);
 
@@ -267,8 +268,10 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
                     } else {
                         capacityRevenue = 0;
                     }
-
+                    logger.warn("Expected Capacity Market Revenue" + capacityRevenue);
                     operatingProfit = operatingProfit + capacityRevenue;
+                    logger.warn("Expected Operating Profit" + operatingProfit);
+
                     // TODO Alter discount rate on the basis of the amount
                     // in long-term contracts?
                     // TODO Alter discount rate on the basis of other stuff,
@@ -327,6 +330,8 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
                     if (projectValue > 0 && projectValue / plant.getActualNominalCapacity() > highestValue) {
                         highestValue = projectValue / plant.getActualNominalCapacity();
                         bestTechnology = plant.getTechnology();
+
+                        logger.warn("Agent picks technology for investment - with Operating Profit " + operatingProfit);
                     }
                 }
 
@@ -334,8 +339,7 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
         }
 
         if (bestTechnology != null) {
-            // logger.warn("Agent {} invested in technology {} at tick " +
-            // getCurrentTick(), agent, bestTechnology);
+            logger.warn("Agent {} invested in technology {} at tick " + getCurrentTick(), agent, bestTechnology);
 
             PowerPlant plant = new PowerPlant();
             plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), bestTechnology);
@@ -475,16 +479,15 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
     private class CapacityMarketInformation {
 
         double expectedCapacityMarketPrice;
-
         double peakSegmentLoad = 0;
         double capacitySum;
-        Map<PowerPlant, Double> marginalCMCostMap = new HashMap<PowerPlant, Double>();
-        Map<PowerPlant, Double> meritOrder;
 
         CapacityMarketInformation(ElectricitySpotMarket market, MarketInformation marketInformation,
                 Map<ElectricitySpotMarket, Double> expectedDemand, EnergyProducer agent, double expectedCO2Price,
                 long futureTimePoint) {
             Map<Substance, Double> expectedFuelPrices = predictFuelPrices(agent, futureTimePoint);
+            Map<PowerPlant, Double> marginalCMCostMap = new HashMap<PowerPlant, Double>();
+            Map<PowerPlant, Double> meritOrder;
             double expectedCMDemandTarget;
             double expectedCMDemand = 0d;
             double demandFactor = expectedDemand.get(market).doubleValue();
@@ -500,10 +503,13 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
                 }
             }
 
-            // logger.warn("Capacity Market Information being computed");
+            logger.warn("Capacity Market Information being computed");
+            logger.warn("Peak segment load is " + peakSegmentLoad);
+            logger.warn("demand factor is " + demandFactor);
 
-            expectedCMDemandTarget = regulator.getReserveMargin() * peakSegmentLoad * demandFactor;
+            expectedCMDemandTarget = (1 + regulator.getReserveMargin()) * peakSegmentLoad * demandFactor;
 
+            logger.warn("expected CM demand target" + expectedCMDemandTarget);
             // call a new market information here /ORR Send electricity price as
             // an argument to this role!!! and then
             // compute (only) revenue for every plant in this method.
@@ -514,8 +520,7 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
                     futureTimePoint)) {
 
                 // COMPUTING ESM REVENUE for this plant
-                // logger.warn("calculating ESM Revenue for plant" +
-                // plant.getName());
+                logger.warn("calculating ESM Revenue for plant" + plant.getName());
 
                 Map<Substance, Double> myFuelPrices = new HashMap<Substance, Double>();
                 for (Substance fuel : plant.getTechnology().getFuels()) {
@@ -540,55 +545,83 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
                                         numberOfSegments);
                     }
                 }
-                double fixedOMCost = calculateFixedOperatingCost(plant);// /
+                double fixedOMCost = calculateFixedOperatingCost(plant);
+                logger.warn("Fixed Operating Cost for plant {} is " + fixedOMCost, plant.getName());
                 double operatingProfit = expectedGrossProfit - fixedOMCost;
                 // END COMPUTATION OF ESM REVENUE HERE
-                if (operatingProfit >= 0)
+                logger.warn("ESM Revenue for plant {} is " + operatingProfit, plant.getName());
+                if (operatingProfit >= 0) {
                     marginalCostCapacity = 0;
-                else
-                    marginalCMCostMap.put(plant, marginalCostCapacity);
+                } else {
+                    marginalCostCapacity = -operatingProfit;
+                }
                 capacitySum += plant.getActualNominalCapacity();
+                marginalCMCostMap.put(plant, marginalCostCapacity);
             }
             MapValueComparator comp = new MapValueComparator(marginalCMCostMap);
-            // ...........make this merit order an array list!!!
             meritOrder = new TreeMap<PowerPlant, Double>(comp);
             meritOrder.putAll(marginalCMCostMap);
+            logger.warn(" .....all plants put in merit order - array tree");
 
-            // get capacity price for this merit order, with the demandTarget
+            int i = 0;
+            for (Entry<PowerPlant, Double> plantCost : meritOrder.entrySet()) {
+                logger.warn("iteration number {} and Plant Name " + plantCost.getKey(), i);
+                logger.warn("Plant Cost " + plantCost.getValue());
+                i++;
+            }
+
+            int iterate = 0;
+            for (Map.Entry<PowerPlant, Double> plantCost : meritOrder.entrySet()) {
+                logger.warn("iteration number {} and Plant Name " + plantCost.getKey(), iterate);
+                logger.warn("Plant Cost " + plantCost.getValue());
+                iterate++;
+            }
             long numberOfSegments = reps.segmentRepository.count();
 
-            // use array list here!! :)
-            for (Entry<PowerPlant, Double> plantCost : meritOrder.entrySet()) {
+            for (Map.Entry<PowerPlant, Double> plantCost : meritOrder.entrySet()) {
+                logger.warn("Hello I'm inside the merit order for loop");
                 PowerPlant plant = plantCost.getKey();
                 double plantCapacity = plant.getExpectedAvailableCapacity(futureTimePoint, null, numberOfSegments);
-
-                if (plantCost.getValue() < regulator.getCapacityMarketPriceCap()) {
-
-                    expectedCMDemand = expectedCMDemandTarget
-                            * (1 - regulator.getReserveDemandLowerMargin())
-                            + ((regulator.getCapacityMarketPriceCap() - plantCost.getValue())
-                                    * (regulator.getReserveDemandUpperMargin() + regulator
-                                            .getReserveDemandLowerMargin()) * expectedCMDemandTarget)
-                            / regulator.getCapacityMarketPriceCap();
-
-                    if (supply < expectedCMDemand) {
-                        supply += plantCapacity;
-                        capacityPrice = plantCost.getValue();
-                    }
-
+                logger.warn("Merit order - plant cost is " + plantCost.getValue());
+                logger.warn("Expected plant capacity is " + plantCapacity);
+                // if (plantCost.getValue() <
+                // regulator.getCapacityMarketPriceCap()) {
+                expectedCMDemand = expectedCMDemandTarget
+                        * (1 - regulator.getReserveDemandLowerMargin())
+                        + ((regulator.getCapacityMarketPriceCap() - plantCost.getValue())
+                                * (regulator.getReserveDemandUpperMargin() + regulator.getReserveDemandLowerMargin()) * expectedCMDemandTarget)
+                        / regulator.getCapacityMarketPriceCap();
+                logger.warn("ExpectedCMDemand is " + expectedCMDemand);
+                logger.warn("Supply before acceptance is" + supply);
+                if (supply < expectedCMDemand) {
+                    supply += plantCapacity;
+                    capacityPrice = plantCost.getValue();
                 }
+                logger.warn("Supply after acceptance is " + supply);
+                logger.warn("Capacity price (inside loop) is " + capacityPrice);
+
+                // }
 
             }
             if (supply >= expectedCMDemand) {
                 expectedCapacityMarketPrice = capacityPrice;
+                logger.warn("**********MARKET CLEARED****Capacity price  is " + expectedCapacityMarketPrice);
             } else {
                 capacityPrice = regulator.getCapacityMarketPriceCap()
                         * (1 + ((expectedCMDemandTarget * (1 - regulator.getReserveDemandLowerMargin()) - supply) / ((regulator
                                 .getReserveDemandUpperMargin() + regulator.getReserveDemandLowerMargin()) * expectedCMDemandTarget)));
-                expectedCapacityMarketPrice = capacityPrice;
+                expectedCapacityMarketPrice = max(capacityPrice, regulator.getCapacityMarketPriceCap());
+                logger.warn("**********MARKET UNCLEARED ****Capacity price  is " + expectedCapacityMarketPrice);
             }
 
         }
+    }
+
+    private double max(double capacityMarketPriceCap, double acceptedPrice) {
+        if (acceptedPrice >= capacityMarketPriceCap)
+            return capacityMarketPriceCap;
+        else
+            return acceptedPrice;
     }
 
     private class MarketInformation {

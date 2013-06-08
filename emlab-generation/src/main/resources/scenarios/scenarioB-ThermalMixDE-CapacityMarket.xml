@@ -27,9 +27,26 @@
 		p:co2TradingImplemented="false" p:realRenewableDataImplemented="false"
 		p:iterationSpeedFactor="3" p:iterationSpeedCriterion="0.005"
 		p:capDeviationCriterion="0.03"
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:deletionOldPPDPBidsAndCashFlowsEnabled="true" p:deletionAge="4">		
 	</bean>
 
+		<bean id="regulatorA" class="emlab.gen.domain.agent.Regulator"
+		p:name="Regulator A" p:capacityMarketPriceCap="${capacityMarketPriceCap}"
+		p:reserveMargin="${reserveMargin}" p:targetPeriod="0"
+		p:reserveDemandLowerMargin="${reserveDemandLowerMargin}" p:reserveDemandUpperMargin="${reserveDemandUpperMargin}"
+		p:numberOfYearsLookingBackToForecastDemand="4"> 
+		<property name="zone" ref="de" />
+		</bean>
+		
+		
+	<bean id="capacityMarketA" class="emlab.gen.domain.market.capacity.CapacityMarket"
+		p:name="Capacity Market A" >
+		<property name="regulator" ref="regulatorA"/>
+		<property name="consumer" ref="energyConsumer"/>
+		<property name="zone" ref="de" />
+		</bean>
+		
 	<bean class="emlab.gen.trend.TriangularTrend" id="demandGrowthTrendDE"
 		p:start="${demandGrowthDEStart}" p:min="${demandGrowthDEMin}" p:max="${demandGrowthDEMax}"
 		p:top="${demandGrowthDETop}" />
@@ -312,6 +329,7 @@
 	<bean id="energyProducerA" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer A" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -324,6 +342,7 @@
 	<bean id="energyProducerB" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer B" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -336,6 +355,7 @@
 	<bean id="energyProducerC" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer C" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -348,6 +368,7 @@
 	<bean id="energyProducerD" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer D" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -360,6 +381,7 @@
 	<bean id="energyProducerE" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer E" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -369,7 +391,7 @@
 		p:numberOfYearsBacklookingForForecasting="${numberOfYearsBacklookingForForecasting}"
 		p:investorMarket-ref="germanElectricitySpotMarket"/>
 
-	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestInPowerGenerationTechnologiesRole"/>
+	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestInPowerGenerationTechnologiesCM_V3_Role"/>
 	
 	<!-- PowerGenerationTechnology Node Limits -->
 	
@@ -748,7 +770,7 @@
 	<bean id="projectPropertyConfigurer"
 		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="location"
-			value="classpath:scenarios/parametersB-ThermalMixDE.properties" />
+			value="classpath:scenarios/parametersB-ThermalMixDE-CapacityMarket.properties" />
 	</bean>
 
 </beans>

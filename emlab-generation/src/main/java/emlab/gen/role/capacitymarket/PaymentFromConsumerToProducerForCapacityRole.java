@@ -57,8 +57,10 @@ public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarket
             reps.nonTransactionalCreateRepository.createCashFlow(capacityMarket.getConsumer(), plan.getBidder(),
                     plan.getAcceptedAmount() * capacityClearingPoint.getPrice(), CashFlow.SIMPLE_CAPACITY_MARKET,
                     getCurrentTick(), plan.getPlant());
-            logger.warn("Cash flow from consumer {} to Producer {} of value {} " + plan.getAcceptedAmount()
-                    * capacityClearingPoint.getPrice(), plan.getBidder(), capacityMarket.getConsumer());
+            // logger.warn("Cash flow from consumer {} to Producer {} of value {} "
+            // + plan.getAcceptedAmount()
+            // * capacityClearingPoint.getPrice(), plan.getBidder(),
+            // capacityMarket.getConsumer());
         }
 
     }
