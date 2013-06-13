@@ -254,6 +254,8 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                     // plant.getActualNominalCapacity();
 
                     double operatingProfit = expectedGrossProfit - fixedOMCost;
+                    logger.warn("Operating Profit without Capacity Revenue" + operatingProfit);
+                    Segment peakSegment = reps.segmentRepository.peakSegmentByElectricitySpotMarket(market);
 
                     Zone zoneTemp = market.getZone();
                     Regulator regulator = reps.regulatorRepository.findRegulatorForZone(zoneTemp);
@@ -271,13 +273,16 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                                     .findOneClearingPointForTimeAndCapacityMarket(time, cMarket).getPrice();
                             sumCapacityRevenue += capacityRevenueTemp;
                         }
-                        capacityRevenue = sumCapacityRevenue / (getCurrentTick() - time);
+                        capacityRevenue = plant.getExpectedAvailableCapacity(futureTimePoint, peakSegment,
+                                numberOfSegments) * sumCapacityRevenue / (getCurrentTick() - time);
 
                     } else {
                         capacityRevenue = 0;
                     }
+                    logger.warn("Capacity Revenue" + capacityRevenue);
 
                     operatingProfit = operatingProfit + capacityRevenue;
+                    logger.warn("Operating Profit with capacity revenue" + operatingProfit);
                     // TODO Alter discount rate on the basis of the amount
                     // in long-term contracts?
                     // TODO Alter discount rate on the basis of other stuff,
@@ -314,6 +319,7 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                     // agent, technology);
 
                     double projectValue = discountedOpProfit + discountedCapitalCosts;
+                    // logger.warn("Project value" + projectValue);
 
                     // logger.warn(
                     // "Agent {}  found the project value for technology {} to be "
@@ -343,8 +349,7 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
         }
 
         if (bestTechnology != null) {
-            // logger.warn("Agent {} invested in technology {} at tick " +
-            // getCurrentTick(), agent, bestTechnology);
+            logger.warn("Agent {} invested in technology {} at tick " + getCurrentTick(), agent, bestTechnology);
 
             PowerPlant plant = new PowerPlant();
             plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), bestTechnology);

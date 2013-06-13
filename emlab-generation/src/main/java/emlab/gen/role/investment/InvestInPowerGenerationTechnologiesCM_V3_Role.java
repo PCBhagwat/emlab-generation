@@ -489,7 +489,7 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
             Map<PowerPlant, Double> marginalCMCostMap = new HashMap<PowerPlant, Double>();
             Map<PowerPlant, Double> meritOrder;
             double expectedCMDemandTarget;
-            double expectedCMDemand = 0d;
+            // double expectedCMDemand = 0d;
             double demandFactor = expectedDemand.get(market).doubleValue();
             Zone zone = market.getZone();
             double supply = 0d;
@@ -546,10 +546,12 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
                     }
                 }
                 double fixedOMCost = calculateFixedOperatingCost(plant);
-                logger.warn("Fixed Operating Cost for plant {} is " + fixedOMCost, plant.getName());
+                // logger.warn("Fixed Operating Cost for plant {} is " +
+                // fixedOMCost, plant.getName());
                 double operatingProfit = expectedGrossProfit - fixedOMCost;
                 // END COMPUTATION OF ESM REVENUE HERE
-                logger.warn("ESM Revenue for plant {} is " + operatingProfit, plant.getName());
+                // logger.warn("ESM Revenue for plant {} is " + operatingProfit,
+                // plant.getName());
                 if (operatingProfit >= 0) {
                     marginalCostCapacity = 0;
                 } else {
@@ -561,49 +563,40 @@ public class InvestInPowerGenerationTechnologiesCM_V3_Role<T extends EnergyProdu
             MapValueComparator comp = new MapValueComparator(marginalCMCostMap);
             meritOrder = new TreeMap<PowerPlant, Double>(comp);
             meritOrder.putAll(marginalCMCostMap);
-            logger.warn(" .....all plants put in merit order - array tree");
+            // logger.warn(" .....all plants put in merit order - array tree");
 
-            int i = 0;
-            for (Entry<PowerPlant, Double> plantCost : meritOrder.entrySet()) {
-                logger.warn("iteration number {} and Plant Name " + plantCost.getKey(), i);
-                logger.warn("Plant Cost " + plantCost.getValue());
-                i++;
-            }
-
-            int iterate = 0;
-            for (Map.Entry<PowerPlant, Double> plantCost : meritOrder.entrySet()) {
-                logger.warn("iteration number {} and Plant Name " + plantCost.getKey(), iterate);
-                logger.warn("Plant Cost " + plantCost.getValue());
-                iterate++;
-            }
             long numberOfSegments = reps.segmentRepository.count();
 
             for (Map.Entry<PowerPlant, Double> plantCost : meritOrder.entrySet()) {
-                logger.warn("Hello I'm inside the merit order for loop");
+                // logger.warn("Hello I'm inside the merit order for loop");
                 PowerPlant plant = plantCost.getKey();
                 double plantCapacity = plant.getExpectedAvailableCapacity(futureTimePoint, null, numberOfSegments);
-                logger.warn("Merit order - plant cost is " + plantCost.getValue());
-                logger.warn("Expected plant capacity is " + plantCapacity);
+                // logger.warn("Merit order - plant cost is " +
+                // plantCost.getValue());
+                // logger.warn("Expected plant capacity is " + plantCapacity);
                 // if (plantCost.getValue() <
                 // regulator.getCapacityMarketPriceCap()) {
-                expectedCMDemand = expectedCMDemandTarget
-                        * (1 - regulator.getReserveDemandLowerMargin())
-                        + ((regulator.getCapacityMarketPriceCap() - plantCost.getValue())
-                                * (regulator.getReserveDemandUpperMargin() + regulator.getReserveDemandLowerMargin()) * expectedCMDemandTarget)
-                        / regulator.getCapacityMarketPriceCap();
-                logger.warn("ExpectedCMDemand is " + expectedCMDemand);
-                logger.warn("Supply before acceptance is" + supply);
-                if (supply < expectedCMDemand) {
+                // expectedCMDemand = expectedCMDemandTarget
+                // * (1 - regulator.getReserveDemandLowerMargin())
+                // + ((regulator.getCapacityMarketPriceCap() -
+                // plantCost.getValue())
+                // * (regulator.getReserveDemandUpperMargin() +
+                // regulator.getReserveDemandLowerMargin()) *
+                // expectedCMDemandTarget)
+                // / regulator.getCapacityMarketPriceCap();
+                // logger.warn("ExpectedCMDemand is " + expectedCMDemand);
+                // logger.warn("Supply before acceptance is" + supply);
+                if (supply < expectedCMDemandTarget) {
                     supply += plantCapacity;
                     capacityPrice = plantCost.getValue();
                 }
-                logger.warn("Supply after acceptance is " + supply);
+                // logger.warn("Supply after acceptance is " + supply);
                 logger.warn("Capacity price (inside loop) is " + capacityPrice);
 
                 // }
 
             }
-            if (supply >= expectedCMDemand) {
+            if (supply >= expectedCMDemandTarget) {
                 expectedCapacityMarketPrice = capacityPrice;
                 logger.warn("**********MARKET CLEARED****Capacity price  is " + expectedCapacityMarketPrice);
             } else {

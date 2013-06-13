@@ -27,6 +27,7 @@ import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.domain.market.electricity.PowerPlantDispatchPlan;
+import emlab.gen.domain.market.electricity.Segment;
 import emlab.gen.domain.market.electricity.SegmentLoad;
 import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.Reps;
@@ -139,7 +140,8 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
             // logger.info("Submitting offers for {} with technology {}",
             // plant.getName(), plant.getTechnology().getName());
 
-            double capacity = plant.getAvailableCapacity(getCurrentTick(), null, numberOfSegments);
+            Segment peakSegment = reps.segmentRepository.peakSegmentByElectricitySpotMarket(eMarket);
+            double capacity = plant.getAvailableCapacity(getCurrentTick(), peakSegment, numberOfSegments);
             // logger.info("I bid capacity: {} and price: {} into the capacity market",
             // capacity, bidPrice);
 

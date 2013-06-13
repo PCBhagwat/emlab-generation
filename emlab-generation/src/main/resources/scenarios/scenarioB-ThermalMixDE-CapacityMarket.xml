@@ -391,7 +391,7 @@
 		p:numberOfYearsBacklookingForForecasting="${numberOfYearsBacklookingForForecasting}"
 		p:investorMarket-ref="germanElectricitySpotMarket"/>
 
-	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestInPowerGenerationTechnologiesCM_V3_Role"/>
+	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestInPowerGenerationTechnologiesRole"/>
 	
 	<!-- PowerGenerationTechnology Node Limits -->
 	
@@ -770,7 +770,7 @@
 	<bean id="projectPropertyConfigurer"
 		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="location"
-			value="classpath:scenarios/parametersB-ThermalMixDE-CapacityMarket.properties" />
+			value="classpath:scenarios/parametersB-OneCountry-CapacityMarket.properties" />
 	</bean>
 
 </beans>
