@@ -15,7 +15,7 @@ fi
 
 ## the first parameter gives the jobname, the second the scenario-file including the xml file-ending
 ## Example sh localHeadless.sh example scenarioA-ToyModel.xml
-JOBNAME=CapMech2
+JOBNAME=CapMechTest
 SCENARIO=scenarioB-OneCountry-CapacityMarket
 SCENARIOPATH=file://$LOCALSCENARIOFOLDER
 

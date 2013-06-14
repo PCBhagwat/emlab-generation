@@ -140,8 +140,12 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
             // logger.info("Submitting offers for {} with technology {}",
             // plant.getName(), plant.getTechnology().getName());
 
+            double capacity1 = plant.getAvailableCapacity(getCurrentTick(), null, numberOfSegments);
+            //logger.warn("Available capacity (null) for technology {} is " + capacity1, plant.getName());
             Segment peakSegment = reps.segmentRepository.peakSegmentByElectricitySpotMarket(eMarket);
             double capacity = plant.getAvailableCapacity(getCurrentTick(), peakSegment, numberOfSegments);
+            //logger.warn("Available capacity (peakSegment) for technology {} is " + capacity, plant.getTechnology()
+                    .getName());
             // logger.info("I bid capacity: {} and price: {} into the capacity market",
             // capacity, bidPrice);
 

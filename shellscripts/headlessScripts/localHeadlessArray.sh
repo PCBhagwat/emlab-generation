@@ -5,8 +5,8 @@
 ########################################################################
 USAGE="Provide name of run and number of runs"
 #Load configuration script to substitute
-if [ -f scriptConfigurations.cfg ];then 
-	. scriptConfigurations.cfg
+if [ -f ~/emlab-generation/shellscripts/headlessScripts/scriptConfigurations.cfg ];then 
+	. ~/emlab-generation/shellscripts/headlessScripts/scriptConfigurations.cfg 
 	HOME=$REMOTERESULTFOLDER
 else
     echo "Define scriptConfigurations.cfg, by changing the template. Exiting script."
