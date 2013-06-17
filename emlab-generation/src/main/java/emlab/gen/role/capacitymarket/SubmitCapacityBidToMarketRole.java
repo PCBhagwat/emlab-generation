@@ -52,111 +52,116 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
     @Override
     @Transactional
     public void act(EnergyProducer producer) {
-        logger.warn("***********Submitting Bid Role for Energy Producer ********" + producer.getName());
+        // logger.warn("***********Submitting Bid Role for Energy Producer ********"
+        // + producer.getName());
 
         for (PowerPlant plant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(producer, getCurrentTick())) {
 
+            // logger.warn("Bid calculation for PowerPlant " + plant.getName());
             // get market for the plant by zone
             CapacityMarket market = reps.capacityMarketRepository.findCapacityMarketForZone(plant.getLocation()
                     .getZone());
+            if (market != null) {
+                // logger.warn("CapacityMarket is  " + market.getName());
 
-            ElectricitySpotMarket eMarket = reps.marketRepository.findElectricitySpotMarketForZone(plant.getLocation()
-                    .getZone());
+                ElectricitySpotMarket eMarket = reps.marketRepository.findElectricitySpotMarketForZone(plant
+                        .getLocation().getZone());
 
-            // compute bid price as (fixedOMCost - elecricityMarketRevenue), if
-            // the difference is positive. Else if negative, bid at zero.
-            double bidPrice = 0d;
+                // compute bid price as (fixedOMCost - elecricityMarketRevenue),
+                // if
+                // the difference is positive. Else if negative, bid at zero.
+                double bidPrice = 0d;
 
-            // get FixedOMCost
-            double fixedOnMCost = plant.getTechnology().getFixedOperatingCost(getCurrentTick());
+                // get FixedOMCost
+                double fixedOnMCost = plant.getTechnology().getFixedOperatingCost(getCurrentTick());
+                // logger.warn("FIxed OM cost is  " + fixedOnMCost);
 
-            // logger.warn("fixed operation and maintenance cost is " +
-            // fixedOnMCost);
+                // logger.warn("fixed operation and maintenance cost is " +
+                // fixedOnMCost);
 
-            double expectedElectricityPrice = 0;
-            double electricityMarketRevenue = 0d;
-            long numberOfSegments = reps.segmentRepository.count();
-            double mc = 0d;
-            if (getCurrentTick() == 0) {
-                mc = 0;
-                electricityMarketRevenue = 0d;
-
-            } else {
-
-                // ********** to check if plant was in the merit order or
-                // not******
-                long tickTemp = (getCurrentTick() - 1);
-                // logger.warn("current tick - 1 is " + tickTemp);
-
-                PowerPlantDispatchPlan ppdp = reps.powerPlantDispatchPlanRepository
-                        .findOnePowerPlantDispatchPlanForPeakSegmentGivenPowerPlantAndTime(plant, tickTemp);
-
-                if ((ppdp != null) && (ppdp.getStatus() == -1)) {
+                double expectedElectricityPrice = 0;
+                double electricityMarketRevenue = 0d;
+                long numberOfSegments = reps.segmentRepository.count();
+                double mc = 0d;
+                if (getCurrentTick() == 0) {
+                    mc = 0;
                     electricityMarketRevenue = 0d;
+
                 } else {
-                    // compute revenue from the energy market, using previous
-                    // tick's
-                    // electricity spot market prices
 
-                    mc = calculateMarginalCostExclCO2MarketCost(plant);
-                    for (SegmentLoad segmentLoad : eMarket.getLoadDurationCurve()) {
-                        // logger.warn("Segment Load is " +
-                        // segmentLoad.getBaseLoad());
+                    // ********** to check if plant was in the merit order or
+                    // not in the previous tick, hence tickTemp******
+                    long tickTemp = (getCurrentTick() - 1);
+                    // logger.warn("current tick - 1 is " + tickTemp);
 
-                        expectedElectricityPrice = reps.segmentClearingPointRepository
-                                .findOneSegmentClearingPointForMarketSegmentAndTime(getCurrentTick() - 1,
-                                        segmentLoad.getSegment(), eMarket).getPrice();
+                    PowerPlantDispatchPlan ppdpTest = reps.powerPlantDispatchPlanRepository
+                            .findOnePowerPlantDispatchPlanForPeakSegmentGivenPowerPlantAndTime(plant, tickTemp);
 
-                        double hours = segmentLoad.getSegment().getLengthInHours();
-                        // logger.warn("Number of hours per segment is" +
-                        // hours);
+                    if (ppdpTest == null) {
 
-                        if (mc <= expectedElectricityPrice) {
-                            electricityMarketRevenue += (expectedElectricityPrice - mc)
-                                    * hours
-                                    * plant.getAvailableCapacity(getCurrentTick(), segmentLoad.getSegment(),
-                                            numberOfSegments);
+                    } else {
+                        // compute revenue from the energy market, using
+                        // previous
+                        // tick's
+                        // electricity spot market prices
+                        double capacityAccepted = 0d;
+                        mc = calculateMarginalCostExclCO2MarketCost(plant);
+
+                        for (SegmentLoad segmentLoad : eMarket.getLoadDurationCurve()) {
+
+                            PowerPlantDispatchPlan ppdp = reps.powerPlantDispatchPlanRepository
+                                    .findOnePowerPlantDispatchPlanForPowerPlantForSegmentForTime(plant,
+                                            segmentLoad.getSegment(), tickTemp);
+
+                            if (ppdp.getStatus() < 0) {
+                                electricityMarketRevenue = 0d;
+                            } else if (ppdp.getStatus() >= 2) {
+                                capacityAccepted = ppdp.getAcceptedAmount();
+
+                                expectedElectricityPrice = reps.segmentClearingPointRepository
+                                        .findOneSegmentClearingPointForMarketSegmentAndTime(getCurrentTick() - 1,
+                                                segmentLoad.getSegment(), eMarket).getPrice();
+
+                                double hours = segmentLoad.getSegment().getLengthInHours();
+                                // logger.warn("Number of hours per segment is"
+                                // +
+                                // hours);
+
+                                if (mc <= expectedElectricityPrice) {
+                                    electricityMarketRevenue += (expectedElectricityPrice - mc) * hours
+                                            * ppdp.getAcceptedAmount();
+                                }
+                            }
+
                         }
-                        // logger.warn("available capacity of plant is "
-                        // + plant.getAvailableCapacity(getCurrentTick(),
-                        // segmentLoad.getSegment(), numberOfSegments));
-                        // logger.warn("cumulative revenue from el market is" +
-                        // electricityMarketRevenue);
-
                     }
                 }
+
+                // logger.warn("EL Market revenue is " +
+                // electricityMarketRevenue);
+                double mcCapacity = fixedOnMCost - electricityMarketRevenue;
+                // logger.warn("Fixed Cost - ESM Rev = " + mcCapacity);
+
+                if (mcCapacity < 0) {
+                    bidPrice = 0d;
+                    // } else if (mcCapacity <= fixedOnMCost) {
+                } else {
+                    bidPrice = mcCapacity;
+                }
+
+                Segment peakSegment = reps.segmentRepository.peakSegmentByElectricitySpotMarket(eMarket);
+                double capacity = plant.getAvailableCapacity(getCurrentTick(), peakSegment, numberOfSegments);
+
+                CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
+                plan.specifyAndPersist(plant, producer, market, getCurrentTick(), bidPrice, capacity, Bid.SUBMITTED);
+
+                // logger.warn("CDP for powerplant " +
+                // plan.getPlant().getName());
+                // logger.warn("CDP price is " + plan.getPrice());
+                // logger.warn("CDP amount is " + plan.getAcceptedAmount());
+
             }
-
-            double mcCapacity = fixedOnMCost - electricityMarketRevenue;
-            // logger.warn("Marginal cost of capacity is " + mcCapacity);
-
-            if (mcCapacity < 0) {
-                bidPrice = 0d;
-                // } else if (mcCapacity <= fixedOnMCost) {
-            } else {
-                bidPrice = mcCapacity;
-            }
-
-            // logger.info("Submitting offers for {} with technology {}",
-            // plant.getName(), plant.getTechnology().getName());
-
-            double capacity1 = plant.getAvailableCapacity(getCurrentTick(), null, numberOfSegments);
-            //logger.warn("Available capacity (null) for technology {} is " + capacity1, plant.getName());
-            Segment peakSegment = reps.segmentRepository.peakSegmentByElectricitySpotMarket(eMarket);
-            double capacity = plant.getAvailableCapacity(getCurrentTick(), peakSegment, numberOfSegments);
-            //logger.warn("Available capacity (peakSegment) for technology {} is " + capacity, plant.getTechnology()
-                    .getName());
-            // logger.info("I bid capacity: {} and price: {} into the capacity market",
-            // capacity, bidPrice);
-
-            CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
-            plan.specifyAndPersist(plant, producer, market, getCurrentTick(), bidPrice, capacity, Bid.SUBMITTED);
-
-            // logger.info("Submitted {} for iteration {} to capacity market",
-            // plan);
-            // logger.warn(" Submitted bid at price" + bidPrice);
-            // logger.warn(" And capacity" + capacity);
-
         }
+
     }
 }

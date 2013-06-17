@@ -407,7 +407,7 @@
 		p:name="Power Plant Maintainer" />
 
 	<bean id="beneluxPowerPortfolio" class="emlab.gen.domain.factory.ElectricityProducerFactory">
-		<property name="capacityMargin" value="0.25" />
+		<property name="capacityMargin" value="0.0" />
 		<property name="portfolioShares">
 			<map>
 				<entry>

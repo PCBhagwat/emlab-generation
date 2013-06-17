@@ -30,6 +30,7 @@ import emlab.gen.domain.agent.EnergyProducer;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
+import emlab.gen.domain.market.electricity.PowerPlantDispatchPlan;
 import emlab.gen.domain.market.electricity.Segment;
 import emlab.gen.domain.market.electricity.SegmentClearingPoint;
 import emlab.gen.domain.market.electricity.SegmentLoad;
@@ -57,8 +58,8 @@ public class SubmitCapacityBidToMarketRoleTest {
     SubmitCapacityBidToMarketRole submitCapacityBidRole;
 
     @Test
-    public void testSubmitBidFunctionality() {
-
+    public void testSubmitBidFunctionality1() {
+        // for bidding a positive value
         Segment S1 = new Segment();
         S1.setLengthInHours(20);
         S1.persist();
@@ -241,6 +242,36 @@ public class SubmitCapacityBidToMarketRoleTest {
         pp4.persist();
         pp5.persist();
         pp6.persist();
+
+        PowerPlantDispatchPlan ppdp1 = new PowerPlantDispatchPlan();
+        ppdp1.setPowerPlant(pp1);
+        ppdp1.setStatus(-1);
+        ppdp1.persist();
+
+        PowerPlantDispatchPlan ppdp2 = new PowerPlantDispatchPlan();
+        ppdp2.setPowerPlant(pp2);
+        ppdp2.setStatus(2);
+        ppdp2.persist();
+
+        PowerPlantDispatchPlan ppdp3 = new PowerPlantDispatchPlan();
+        ppdp3.setPowerPlant(pp3);
+        ppdp3.setStatus(3);
+        ppdp3.persist();
+
+        PowerPlantDispatchPlan ppdp4 = new PowerPlantDispatchPlan();
+        ppdp4.setPowerPlant(pp4);
+        ppdp4.setStatus(-1);
+        ppdp4.persist();
+
+        PowerPlantDispatchPlan ppdp5 = new PowerPlantDispatchPlan();
+        ppdp5.setPowerPlant(pp5);
+        ppdp5.setStatus(2);
+        ppdp5.persist();
+
+        PowerPlantDispatchPlan ppdp6 = new PowerPlantDispatchPlan();
+        ppdp6.setPowerPlant(pp6);
+        ppdp6.setStatus(3);
+        ppdp6.persist();
 
         CapacityMarket cMarket = new CapacityMarket();
         cMarket.setName("Capaciteit Markt");

@@ -38,6 +38,15 @@ public interface BidRepository extends GraphRepository<Bid> {
      * Finds all demand bids for a market for a time
      * 
      * @param market
+     *            +Kaveri Search Images Maps Play YouTube News Gmail Drive
+     *            Calendar More
+     * 
+     *            Gmail
+     * 
+     *            Kaveri Iychettira Share Kaveri Iychettira Kaveri Iychettira
+     * 
+     * 
+     * 
      * @param time
      * @return the found bids
      */

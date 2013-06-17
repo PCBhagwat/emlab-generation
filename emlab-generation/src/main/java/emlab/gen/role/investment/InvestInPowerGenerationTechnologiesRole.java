@@ -254,7 +254,8 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                     // plant.getActualNominalCapacity();
 
                     double operatingProfit = expectedGrossProfit - fixedOMCost;
-                    logger.warn("Operating Profit without Capacity Revenue" + operatingProfit);
+                    // logger.warn("Operating Profit without Capacity Revenue" +
+                    // operatingProfit);
                     Segment peakSegment = reps.segmentRepository.peakSegmentByElectricitySpotMarket(market);
 
                     Zone zoneTemp = market.getZone();
@@ -268,21 +269,28 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                         long time = 0l;
                         for (time = getCurrentTick(); time > getCurrentTick()
                                 - agent.getNumberOfYearsBacklookingForForecasting()
-                                && time >= 0; time = time - 1) {
+                                && time > 0; time = time - 1) {
                             double capacityRevenueTemp = reps.capacityMarketRepository
                                     .findOneClearingPointForTimeAndCapacityMarket(time, cMarket).getPrice();
                             sumCapacityRevenue += capacityRevenueTemp;
                         }
+                        // logger.warn(" And capacity (peak segment) is"
+                        // + plant.getExpectedAvailableCapacity(futureTimePoint,
+                        // peakSegment, numberOfSegments));
+                        // logger.warn(" And capacity (null) is"
+                        // + plant.getExpectedAvailableCapacity(futureTimePoint,
+                        // null, numberOfSegments));
                         capacityRevenue = plant.getExpectedAvailableCapacity(futureTimePoint, peakSegment,
                                 numberOfSegments) * sumCapacityRevenue / (getCurrentTick() - time);
 
                     } else {
                         capacityRevenue = 0;
                     }
-                    logger.warn("Capacity Revenue" + capacityRevenue);
+                    // logger.warn("Capacity Revenue" + capacityRevenue);
 
                     operatingProfit = operatingProfit + capacityRevenue;
-                    logger.warn("Operating Profit with capacity revenue" + operatingProfit);
+                    // logger.warn("Operating Profit with capacity revenue" +
+                    // operatingProfit);
                     // TODO Alter discount rate on the basis of the amount
                     // in long-term contracts?
                     // TODO Alter discount rate on the basis of other stuff,
@@ -349,7 +357,8 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
         }
 
         if (bestTechnology != null) {
-            logger.warn("Agent {} invested in technology {} at tick " + getCurrentTick(), agent, bestTechnology);
+            // logger.warn("Agent {} invested in technology {} at tick " +
+            // getCurrentTick(), agent, bestTechnology);
 
             PowerPlant plant = new PowerPlant();
             plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), bestTechnology);

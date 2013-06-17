@@ -33,6 +33,7 @@ import emlab.gen.domain.market.CommodityMarket;
 import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.repository.Reps;
+import emlab.gen.role.capacitymarket.ExportLimiterRole;
 import emlab.gen.role.capacitymarket.SimpleCapacityMarketMainRole;
 import emlab.gen.role.capacitymechanisms.ProcessAcceptedPowerPlantDispatchRoleinSR;
 import emlab.gen.role.capacitymechanisms.StrategicReserveOperatorRole;
@@ -106,6 +107,8 @@ public class DecarbonizationModelRole extends AbstractRole<DecarbonizationModel>
     private ProcessAcceptedPowerPlantDispatchRoleinSR acceptedPowerPlantDispatchRoleinSR;
     @Autowired
     private SimpleCapacityMarketMainRole simpleCapacityMarketMainRole;
+    @Autowired
+    private ExportLimiterRole exportLimiterRole;
 
     @Autowired
     Reps reps;
@@ -155,15 +158,21 @@ public class DecarbonizationModelRole extends AbstractRole<DecarbonizationModel>
         logger.warn("        took: {} seconds.", timerMarket.seconds());
 
         /*
-         * Run Simple Capacity Market
+         * Run Simple Capacity Market (start from tick 1, due to initialization
+         * requirements- it needs values (revenues from electricity sport
+         * market) from previous tick
          */
-        if (model.isSimpleCapacityMarketEnabled()) {
+
+        if ((getCurrentTick() > 0) && (model.isSimpleCapacityMarketEnabled())) {
             timerMarket.reset();
             timerMarket.start();
             logger.warn(" 2. Run Simple Capacity Market");
             for (CapacityMarket market : reps.capacityMarketRepository.findAll()) {
                 simpleCapacityMarketMainRole.act(market);
             }
+
+            exportLimiterRole.act(model);
+
             timerMarket.stop();
             logger.warn("        took: {} seconds.", timerMarket.seconds());
         }
@@ -215,6 +224,7 @@ public class DecarbonizationModelRole extends AbstractRole<DecarbonizationModel>
         timerMarket.reset();
         timerMarket.start();
         logger.warn("  4. Clearing electricity spot and CO2 markets");
+
         clearIterativeCO2AndElectricitySpotMarketTwoCountryRole.act(model);
         // model.act(clearIterativeCO2AndElectricitySpotMarketTwoCountryRole);
         timerMarket.stop();

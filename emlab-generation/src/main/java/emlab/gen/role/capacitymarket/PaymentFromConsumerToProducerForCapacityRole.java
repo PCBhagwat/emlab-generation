@@ -24,6 +24,7 @@ import emlab.gen.domain.contract.CashFlow;
 import emlab.gen.domain.market.ClearingPoint;
 import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
+import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.repository.Reps;
 import emlab.gen.role.market.AbstractMarketRole;
 
@@ -53,10 +54,12 @@ public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarket
                     .findOneClearingPointForTimeAndCapacityMarket(getCurrentTick(), capacityMarket);
 
             // double price = capacityClearingPoint.getPrice();
+            ElectricitySpotMarket esm = reps.marketRepository
+                    .findElectricitySpotMarketForZone(capacityMarket.getZone());
 
-            reps.nonTransactionalCreateRepository.createCashFlow(capacityMarket.getConsumer(), plan.getBidder(),
-                    plan.getAcceptedAmount() * capacityClearingPoint.getPrice(), CashFlow.SIMPLE_CAPACITY_MARKET,
-                    getCurrentTick(), plan.getPlant());
+            reps.nonTransactionalCreateRepository.createCashFlow(esm, plan.getBidder(), plan.getAcceptedAmount()
+                    * capacityClearingPoint.getPrice(), CashFlow.SIMPLE_CAPACITY_MARKET, getCurrentTick(),
+                    plan.getPlant());
             // logger.warn("Cash flow from consumer {} to Producer {} of value {} "
             // + plan.getAcceptedAmount()
             // * capacityClearingPoint.getPrice(), plan.getBidder(),

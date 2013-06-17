@@ -151,6 +151,20 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
         // logger.warn("is the market cleared? " + isTheMarketCleared);
         // logger.warn("Clearing point Price" + clearingPoint.getPrice());
         // logger.warn("Clearing Point Volume" + clearingPoint.getVolume());
+
+        // VERIFICATION
+        double q2 = clearingPoint.getVolume();
+        double q1 = regulator.getDemandTarget()
+                * (1 - regulator.getReserveDemandLowerMargin())
+                + ((regulator.getCapacityMarketPriceCap() - clearingPoint.getPrice())
+                        * (regulator.getReserveDemandUpperMargin() + regulator.getReserveDemandLowerMargin()) * regulator
+                            .getDemandTarget()) / regulator.getCapacityMarketPriceCap();
+        if (q1 == q2) {
+            logger.warn("matches");
+        } else {
+            logger.warn("does not match");
+        }
+
     }
 
     /**
