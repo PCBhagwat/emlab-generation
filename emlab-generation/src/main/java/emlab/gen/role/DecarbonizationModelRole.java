@@ -171,7 +171,7 @@ public class DecarbonizationModelRole extends AbstractRole<DecarbonizationModel>
                 simpleCapacityMarketMainRole.act(market);
             }
 
-            exportLimiterRole.act(model);
+            // exportLimiterRole.act(model);
 
             timerMarket.stop();
             logger.warn("        took: {} seconds.", timerMarket.seconds());

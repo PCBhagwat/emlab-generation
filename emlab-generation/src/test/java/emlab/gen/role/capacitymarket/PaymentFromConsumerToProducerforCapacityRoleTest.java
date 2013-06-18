@@ -25,9 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import emlab.gen.domain.agent.EnergyConsumer;
 import emlab.gen.domain.agent.EnergyProducer;
+import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.capacity.CapacityClearingPoint;
 import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
+import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.Reps;
 
@@ -43,6 +45,10 @@ public class PaymentFromConsumerToProducerforCapacityRoleTest {
     @Autowired
     Reps reps;
 
+    /**
+     * 
+     */
+
     @Autowired
     PaymentFromConsumerToProducerForCapacityRole paymentFromConsumerToProducerForCapacityRole;
 
@@ -50,6 +56,9 @@ public class PaymentFromConsumerToProducerforCapacityRoleTest {
 
     @Test
     public void capacityMarketPaymentFunctionality() {
+
+        Zone zone = new Zone();
+        zone.persist();
 
         EnergyProducer ep1 = new EnergyProducer();
         EnergyProducer ep2 = new EnergyProducer();
@@ -61,7 +70,12 @@ public class PaymentFromConsumerToProducerforCapacityRoleTest {
 
         CapacityMarket market = new CapacityMarket();
         market.setConsumer(consumer);
+        market.setZone(zone);
         market.persist();
+
+        ElectricitySpotMarket esm = new ElectricitySpotMarket();
+        esm.setZone(zone);
+        esm.persist();
 
         CapacityClearingPoint clearingPoint = new CapacityClearingPoint();
         clearingPoint.setCapacityMarket(market);

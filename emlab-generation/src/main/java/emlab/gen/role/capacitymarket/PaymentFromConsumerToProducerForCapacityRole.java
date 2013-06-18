@@ -50,12 +50,17 @@ public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarket
         for (CapacityDispatchPlan plan : reps.capacityMarketRepository.findAllAcceptedCapacityDispatchPlansForTime(
                 capacityMarket, getCurrentTick())) {
 
+            logger.warn("Hi");
+            logger.warn("cdp for plant" + plan.getPlant());
+
             ClearingPoint capacityClearingPoint = reps.capacityMarketRepository
                     .findOneClearingPointForTimeAndCapacityMarket(getCurrentTick(), capacityMarket);
 
+            logger.warn("capacity clearing point " + capacityClearingPoint.getPrice());
             // double price = capacityClearingPoint.getPrice();
             ElectricitySpotMarket esm = reps.marketRepository
                     .findElectricitySpotMarketForZone(capacityMarket.getZone());
+            logger.warn("esmt " + esm.getName());
 
             reps.nonTransactionalCreateRepository.createCashFlow(esm, plan.getBidder(), plan.getAcceptedAmount()
                     * capacityClearingPoint.getPrice(), CashFlow.SIMPLE_CAPACITY_MARKET, getCurrentTick(),

@@ -32,7 +32,7 @@
 		p:deletionAge="2">
 	</bean>
 	
-			<bean id="regulatorB" class="emlab.gen.domain.agent.Regulator"
+	<bean id="regulatorB" class="emlab.gen.domain.agent.Regulator"
 		p:name="Regulator B" p:capacityMarketPriceCap="${capacityMarketPriceCap}"
 		p:reserveMargin="${reserveMargin}" p:targetPeriod="0"
 		p:reserveDemandLowerMargin="${reserveDemandLowerMargin}" p:reserveDemandUpperMargin="${reserveDemandUpperMargin}"
@@ -56,11 +56,11 @@
 
 	<!-- Substances -->
 	<bean id="coal" class="emlab.gen.domain.technology.Substance" p:name="Coal"
-		p:quality="1" p:energyDensity="1000" p:co2Density="0.095" p:unit="GJ"  />
+		p:quality="1" p:energyDensity="29308" p:co2Density="2.78426" p:unit="tSKE"  />
 	<bean id="lignite" class="emlab.gen.domain.technology.Substance" p:name="Lignite"
 		p:quality="1" p:energyDensity="3600" p:co2Density="0.41" p:unit="MWh_th" />
 	<bean id="naturalgas" class="emlab.gen.domain.technology.Substance"
-		p:name="Natural Gas" p:quality="1" p:energyDensity="1000" p:co2Density="0.05194" p:unit="GJ"/>
+		p:name="Natural Gas" p:quality="1" p:energyDensity="36" p:co2Density="0.00187" />
 	<bean id="biomass" class="emlab.gen.domain.technology.Substance"
 		p:name="Biomass" p:quality="0.5" p:energyDensity="25000"
 		p:co2Density="0" />
@@ -780,8 +780,10 @@
 		p:auction="true" p:referencePrice="0" p:name="CO2 auction" p:substance-ref="co2"/>
 
 	<!-- Fuel Prices -->
-	<bean id="coalPrice" class="emlab.gen.trend.TimeSeriesPropReader" p:timeSeriesStr="${coalPriceSeries}" />
-	<bean id="gasPrice" class="emlab.gen.trend.TimeSeriesPropReader" p:timeSeriesStr="${gasPriceSeries}" />
+	<bean id="coalPrice" class="emlab.gen.trend.TriangularTrend" p:start="${coalPriceStart}"
+		p:min="${coalPriceMin}" p:max="${coalPriceMax}" p:top="${coalPriceTop}" />
+	<bean id="gasPrice" class="emlab.gen.trend.TriangularTrend" p:start="${gasPriceStart}"
+		p:min="${gasPriceMin}" p:max="${gasPriceMax}" p:top="${gasPriceTop}" />
 	<bean id="biomassPrice" class="emlab.gen.trend.TriangularTrend"
 		p:start="${biomassPriceStart}" p:min="${biomassPriceMin}" p:max="${biomassPriceMax}"
 		p:top="${biomassPriceTop}" />
@@ -831,7 +833,7 @@
 	<bean id="energyProducerA" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer A" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
-		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -844,7 +846,7 @@
 	<bean id="energyProducerB" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer B" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
-		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -857,7 +859,7 @@
 	<bean id="energyProducerC" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer C" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
-		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -870,7 +872,7 @@
 	<bean id="energyProducerD" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer D" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
-		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -883,7 +885,7 @@
 	<bean id="energyProducerE" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer E" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
-		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -896,7 +898,7 @@
 	<bean id="energyProducerF" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer F" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
-		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -908,7 +910,7 @@
 	<bean id="energyProducerG" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer G" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
-		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -920,7 +922,7 @@
 	<bean id="energyProducerH" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer H" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
-		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -933,7 +935,7 @@
 	<bean id="energyProducerI" class="emlab.gen.domain.agent.EnergyProducer"
 		p:name="Energy Producer I" p:cash="${startCash}"
 		p:investmentRole-ref="standardInvestmentRole"
-		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}" 
+		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="${investmentFutureTimeHorizon}" p:pastTimeHorizon="5"
 		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
@@ -945,7 +947,95 @@
 		p:investorMarket-ref="beneluxElectricitySpotMarket"/>
 
 	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestInPowerGenerationTechnologiesRole"/>
-
+	<bean id="targetInvestmentRole" class="emlab.gen.role.investment.TargetInvestmentRole"/>
+	
+	<!-- Renewable Targets Country A -->
+	
+	<bean id="renewableTargetInvestorCountryA" class="emlab.gen.domain.agent.TargetInvestor"
+	p:name="Renewable Target Investor Country A" p:cash="${startCash}"
+	p:investmentRole-ref="targetInvestmentRole"
+	p:priceMarkUp="1.0"
+	p:investorMarket-ref="beneluxElectricitySpotMarket"
+	p:equityInterestRate="0.12" p:loanInterestRate="0.09"
+	p:debtRatioOfInvestments="0.7">
+	<property name="powerGenerationTechnologyTargets">
+		<set>
+			<ref bean="windTargetCountryA"/>
+			<ref bean="windOffshoreTargetCountryA" />
+			<ref bean="biomassTargetCountryA" />
+			<ref bean="pvTargetCountryA" />
+		</set>
+	</property>
+	</bean>
+	
+	
+	<bean id="windTargetCountryA" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
+	p:trend-ref="windTrendCountryA" p:powerGeneratingTechnology-ref="windPGT" />
+	
+	<bean id="windTrendCountryA" class="emlab.gen.trend.StepTrend"
+	p:duration="1" p:minValue="1995" p:increment="445" p:start="1995" />
+	
+	<bean id="windOffshoreTargetCountryA" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
+	p:trend-ref="windOffshoreTrendCountryA" p:powerGeneratingTechnology-ref="windOffshorePGT"/>
+	
+	<bean id="windOffshoreTrendCountryA" class="emlab.gen.trend.StepTrend"
+	p:duration="1" p:minValue="228" p:increment="550" p:start="228" /> 
+	
+	<bean id="biomassTargetCountryA" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
+	p:trend-ref="biomassTrendCountryA" p:powerGeneratingTechnology-ref="biomassPGT"/>
+	
+	<bean id="biomassTrendCountryA" class="emlab.gen.trend.StepTrend"
+	p:duration="1" p:minValue="1543" p:increment="149.8888888889" p:start="1543	" /> 
+	
+	<bean id="pvTargetCountryA" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
+	p:trend-ref="pvTrendCountryA" p:powerGeneratingTechnology-ref="photovoltaicPGT"/>
+	
+	<bean id="pvTrendCountryA" class="emlab.gen.trend.StepTrend"
+	p:duration="1" p:minValue="149" p:increment="63.6666666667" p:start="149" />
+	
+	<!-- Renewable Targets Country B -->
+	
+	<bean id="renewableTargetInvestorCountryB" class="emlab.gen.domain.agent.TargetInvestor"
+	p:name="Renewable Target Investor Country B" p:cash="${startCash}"
+	p:investmentRole-ref="targetInvestmentRole"
+	p:priceMarkUp="1.0"
+	p:investorMarket-ref="germanElectricitySpotMarket"
+	p:equityInterestRate="0.12" p:loanInterestRate="0.09"
+	p:debtRatioOfInvestments="0.7">
+	<property name="powerGenerationTechnologyTargets">
+		<set>
+			<ref bean="windTargetCountryB"/>
+			<ref bean="pvTargetCountryB" />
+			<ref bean="windOffshoreTargetCountryB"/>
+			<ref bean="biomassTargetCountryB"/>
+		</set>
+	</property>
+	</bean>
+	
+	<bean id="windTargetCountryB" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
+	p:trend-ref="windTrendCountryB" p:powerGeneratingTechnology-ref="windPGT"/>
+	
+	<bean id="windTrendCountryB" class="emlab.gen.trend.StepTrend"
+	p:duration="1" p:minValue="29175" p:increment="822.4" p:start="29175" /> 
+	
+	<bean id="windOffshoreTargetCountryB" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
+	p:trend-ref="windOffshoreTrendCountryB" p:powerGeneratingTechnology-ref="windOffshorePGT"/>
+	
+	<bean id="windOffshoreTrendCountryB" class="emlab.gen.trend.StepTrend"
+	p:duration="1" p:minValue="432" p:increment="822.4" p:start="432" /> 
+	
+	<bean id="biomassTargetCountryB" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
+	p:trend-ref="biomassTrendCountryB" p:powerGeneratingTechnology-ref="biomassPGT"/>
+	
+	<bean id="biomassTrendCountryB" class="emlab.gen.trend.StepTrend"
+	p:duration="1" p:minValue="6620" p:increment="251.3" p:start="6620" /> 
+	
+	<bean id="pvTargetCountryB" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
+	p:trend-ref="pvTrendCountryB" p:powerGeneratingTechnology-ref="photovoltaicPGT"/>
+	
+	<bean id="pvTrendCountryB" class="emlab.gen.trend.StepTrend"
+	p:duration="1" p:minValue="20284" p:increment="3596.9" p:start="20284" />
+	
 	<!-- PowerGenerationTechnology Node Limits -->
 	
 	<bean id="ligniteNodeLimitNl" class="emlab.gen.domain.technology.PowerGeneratingTechnologyNodeLimit"
@@ -970,7 +1060,7 @@
 		p:name="Power Plant Maintainer" />
 
 	<bean id="beneluxPowerPortfolio" class="emlab.gen.domain.factory.ElectricityProducerFactory">
-		<property name="capacityMargin" value="0.1" />
+		<property name="capacityMargin" value="0.25" />
 		<property name="portfolioShares">
 			<map>
 				<entry>
@@ -982,6 +1072,12 @@
 				<entry>
 					<key>
 						<ref bean="CCGT" />
+					</key>
+					<value>0.40</value>
+				</entry>
+				<entry>
+					<key>
+						<ref bean="OCGT" />
 					</key>
 					<value>0.16</value>
 				</entry>
@@ -1022,7 +1118,7 @@
 	</bean>
 
 	<bean id="germanPowerPortfolio" class="emlab.gen.domain.factory.ElectricityProducerFactory">
-		<property name="capacityMargin" value="0.0" />
+		<property name="capacityMargin" value="0.25" />
 		<property name="portfolioShares">
 			<map>
 				<entry>
@@ -1473,7 +1569,7 @@
 	<!-- Parameter file -->
 	<bean id="projectPropertyConfigurer"
 		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-		<property name="location" value="classpath:scenarios/parametersC-ETS-CM-de.properties" />
+		<property name="location" value="classpath:scenarios/parametersE-MinCO2-resTarget-CM.properties" />
 	</bean>
 
 </beans>

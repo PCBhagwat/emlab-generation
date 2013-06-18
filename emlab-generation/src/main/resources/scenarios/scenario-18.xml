@@ -24,7 +24,7 @@
 	<!-- Decarbonization Model -->
 	<bean id="decarbonizationModel" class="emlab.gen.domain.agent.DecarbonizationModel"
 		p:name="Decarbonization Model" p:simulationLength="${simulationLength}"
-		p:co2TradingImplemented="true"
+		p:co2TradingImplemented="${co2TradingImplemented}"
 		p:realRenewableDataImplemented="false"
 		p:simpleCapacityMarketEnabled="${simpleCapacityMarketEnabled}"
 		p:iterationSpeedFactor="3" p:iterationSpeedCriterion="0.005"
@@ -1473,7 +1473,8 @@
 	<!-- Parameter file -->
 	<bean id="projectPropertyConfigurer"
 		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-		<property name="location" value="classpath:scenarios/parametersC-ETS-CM-de.properties" />
+		<property name="location" value="classpath:scenarios/parameters18.properties" />
 	</bean>
 
 </beans>
+
