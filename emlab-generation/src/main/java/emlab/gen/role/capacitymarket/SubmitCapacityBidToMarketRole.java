@@ -137,9 +137,11 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                     }
                 }
 
+                double electricityMarketRevenuePerMW = electricityMarketRevenue
+                        / plant.getAvailableCapacity(getCurrentTick());
                 // logger.warn("EL Market revenue is " +
                 // electricityMarketRevenue);
-                double mcCapacity = fixedOnMCost - electricityMarketRevenue;
+                double mcCapacity = fixedOnMCost - electricityMarketRevenuePerMW;
                 // logger.warn("Fixed Cost - ESM Rev = " + mcCapacity);
 
                 if (mcCapacity < 0) {
