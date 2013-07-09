@@ -470,7 +470,7 @@
 	
 	<bean id="strategicReserveOperatorA" class="emlab.gen.domain.agent.StrategicReserveOperator"
 		p:name="StrategicReserveOperatorDE" p:cash="0" p:reservePriceSR="608"
-		p:reserveVolumePercentSR="0.1">
+		p:reserveVolumePercentSR="0.0932">
 		<property name="zone" ref="de" />
 	</bean>
 
