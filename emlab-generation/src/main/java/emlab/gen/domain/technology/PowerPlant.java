@@ -74,6 +74,7 @@ public class PowerPlant {
     private long actualLeadtime;
     private long actualPermittime;
     private long actualLifetime;
+    private String name;
     private String label;
     private double actualInvestedCapital;
     private double actualFixedOperatingCost;
@@ -320,6 +321,7 @@ public class PowerPlant {
     }
 
     public void setName(String label) {
+        this.name = label;
         this.label = label;
     }
 
