@@ -118,8 +118,13 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                 currentCDP.persist();
 
             }
+
+            // logger.warn("Current CDP Price " + currentCDP.getPrice());
+            // logger.warn("Cumulatively accepted volume " +
+            // sumofSupplyBidsAccepted);
         }
-        logger.warn("Demand for the capacity market at tick {} is " + demand, getCurrentTick());
+        // logger.warn("Demand for the capacity market at tick {} is " + demand,
+        // getCurrentTick());
 
         CapacityClearingPoint clearingPoint = new CapacityClearingPoint();
         if (isTheMarketCleared == true) {

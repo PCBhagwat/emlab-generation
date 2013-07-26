@@ -107,6 +107,8 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                         double capacityAccepted = 0d;
                         mc = calculateMarginalCostExclCO2MarketCost(plant);
 
+                        double sumEMR = 0d;
+
                         for (SegmentLoad segmentLoad : eMarket.getLoadDurationCurve()) {
 
                             PowerPlantDispatchPlan ppdp = reps.powerPlantDispatchPlanRepository
@@ -123,24 +125,33 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                                                 segmentLoad.getSegment(), eMarket).getPrice();
 
                                 double hours = segmentLoad.getSegment().getLengthInHours();
-                                // logger.warn("Number of hours per segment is"
+                                // logger.warn("Number of hours per segment is"logger.warn("EL Market revenue is "
+                                // + electricityMarketRevenue);
                                 // +
                                 // hours);
 
                                 if (mc <= expectedElectricityPrice) {
-                                    electricityMarketRevenue += (expectedElectricityPrice - mc) * hours
+                                    sumEMR = sumEMR + (expectedElectricityPrice - mc) * hours
                                             * ppdp.getAcceptedAmount();
+                                    // logger.warn("EL Market revenue for this segment is "
+                                    // + sumEMR);
                                 }
+
                             }
 
                         }
+
+                        electricityMarketRevenue = sumEMR;
                     }
                 }
 
                 double electricityMarketRevenuePerMW = electricityMarketRevenue
                         / plant.getAvailableCapacity(getCurrentTick());
-                // logger.warn("EL Market revenue is " +
+                // logger.warn("FINAL EL Market revenue is " +
                 // electricityMarketRevenue);
+                // logger.warn("EL Market revenue per MW is " +
+                // electricityMarketRevenuePerMW);
+
                 double mcCapacity = fixedOnMCost - electricityMarketRevenuePerMW;
                 // logger.warn("Fixed Cost - ESM Rev = " + mcCapacity);
 
@@ -160,7 +171,7 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                 // logger.warn("CDP for powerplant " +
                 // plan.getPlant().getName());
                 // logger.warn("CDP price is " + plan.getPrice());
-                // logger.warn("CDP amount is " + plan.getAcceptedAmount());
+                // logger.warn("CDP amount is " + plan.getAmount());
 
             }
         }
