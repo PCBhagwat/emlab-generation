@@ -1,4 +1,5 @@
 setwd("~/emlab-generation/rscripts/")
+user<-kaveri
 source("rConfig.R")
 source("batchRunAnalysis.R")
 setwd(analysisFolder)

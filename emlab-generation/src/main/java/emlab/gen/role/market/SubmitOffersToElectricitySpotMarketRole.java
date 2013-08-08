@@ -38,9 +38,12 @@ import emlab.gen.repository.Reps;
 import emlab.gen.role.AbstractEnergyProducerRole;
 
 /**
- * {@link EnergyProducer} submits offers to the {@link ElectricitySpotMarket}. One {@link Bid} per {@link PowerPlant}.
+ * {@link EnergyProducer} submits offers to the {@link ElectricitySpotMarket}.
+ * One {@link Bid} per {@link PowerPlant}.
  * 
- * @author <a href="mailto:A.Chmieliauskas@tudelft.nl">Alfredas Chmieliauskas</a> @author <a href="mailto:E.J.L.Chappin@tudelft.nl">Emile Chappin</a>
+ * @author <a href="mailto:A.Chmieliauskas@tudelft.nl">Alfredas
+ *         Chmieliauskas</a> @author <a
+ *         href="mailto:E.J.L.Chappin@tudelft.nl">Emile Chappin</a>
  * 
  */
 @RoleComponent
@@ -56,6 +59,10 @@ public class SubmitOffersToElectricitySpotMarketRole extends AbstractEnergyProdu
         long numberOfSegments = reps.segmentRepository.count();
         ElectricitySpotMarket market = producer.getInvestorMarket();
 
+        // logger.warn("The ESM market is " + market.getName());
+        // logger.warn("The load duration curve is " +
+        // market.getLoadDurationCurve());
+
         // find all my operating power plants
         for (PowerPlant plant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(producer, getCurrentTick())) {
 
@@ -66,13 +73,15 @@ public class SubmitOffersToElectricitySpotMarketRole extends AbstractEnergyProdu
             double mc = calculateMarginalCostExclCO2MarketCost(plant);
             double price = mc * producer.getPriceMarkUp();
 
-            logger.info("Submitting offers for {} with technology {}", plant.getName(), plant.getTechnology().getName());
+            // logger.info("Submitting offers for {} with technology {}",
+            // plant.getName(), plant.getTechnology().getName());
 
             for (SegmentLoad segmentload : market.getLoadDurationCurve()) {
 
                 Segment segment = segmentload.getSegment();
                 double capacity = plant.getAvailableCapacity(getCurrentTick(), segment, numberOfSegments);
-                logger.info("I bid capacity: {} and price: {}", capacity, mc);
+                // logger.info("I bid capacity: {} and price: {}", capacity,
+                // mc);
 
                 PowerPlantDispatchPlan plan = reps.powerPlantDispatchPlanRepository
                         .findOnePowerPlantDispatchPlanForPowerPlantForSegmentForTime(plant, segment, getCurrentTick());
@@ -89,8 +98,11 @@ public class SubmitOffersToElectricitySpotMarketRole extends AbstractEnergyProdu
 
                 if (plan == null) {
                     plan = new PowerPlantDispatchPlan().persist();
-                    // plan.specifyNotPersist(plant, producer, market, segment, time, price, bidWithoutCO2, spotMarketCapacity, longTermContractCapacity, status);
-                    plan.specifyNotPersist(plant, producer, market, segment, getCurrentTick(), price, price, capacity, 0, Bid.SUBMITTED);
+                    // plan.specifyNotPersist(plant, producer, market, segment,
+                    // time, price, bidWithoutCO2, spotMarketCapacity,
+                    // longTermContractCapacity, status);
+                    plan.specifyNotPersist(plant, producer, market, segment, getCurrentTick(), price, price, capacity,
+                            0, Bid.SUBMITTED);
                 } else {
                     // plan = plans.iterator().next();
                     plan.setBidder(producer);
@@ -102,20 +114,23 @@ public class SubmitOffersToElectricitySpotMarketRole extends AbstractEnergyProdu
                     plan.setStatus(Bid.SUBMITTED);
                 }
 
-                logger.info("Submitted {} for iteration {} to electricity spot market", plan);
+                // logger.info("Submitted {} for iteration {} to electricity spot market",
+                // plan);
 
             }
         }
     }
 
     @Transactional
-    void updateMarginalCostInclCO2AfterFuelMixChange(double co2Price, Map<ElectricitySpotMarket, Double> nationalMinCo2Prices) {
+    void updateMarginalCostInclCO2AfterFuelMixChange(double co2Price,
+            Map<ElectricitySpotMarket, Double> nationalMinCo2Prices) {
 
         int i = 0;
         int j = 0;
 
         Government government = reps.template.findAll(Government.class).iterator().next();
-        for (PowerPlantDispatchPlan plan : reps.powerPlantDispatchPlanRepository.findAllPowerPlantDispatchPlansForTime(getCurrentTick())) {
+        for (PowerPlantDispatchPlan plan : reps.powerPlantDispatchPlanRepository
+                .findAllPowerPlantDispatchPlansForTime(getCurrentTick())) {
             j++;
 
             double capacity = plan.getAmount();
@@ -152,7 +167,7 @@ public class SubmitOffersToElectricitySpotMarketRole extends AbstractEnergyProdu
 
         }
 
-        //logger.warn("Marginal cost of {} of {} plans changed", i, j);
+        // logger.warn("Marginal cost of {} of {} plans changed", i, j);
 
     }
 

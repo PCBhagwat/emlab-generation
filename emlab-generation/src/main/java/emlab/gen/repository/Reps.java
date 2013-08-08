@@ -89,4 +89,19 @@ public class Reps {
     @Autowired
     public StrategicReserveOperatorRepository strategicReserveOperatorRepository;
 
+    @Autowired
+    public CapacityMarketRepository capacityMarketRepository;
+
+    @Autowired
+    public CapacityClearingPointRepository capacityClearingPointRepository;
+
+    @Autowired
+    public RegulatorRepository regulatorRepository;
+
+    @Autowired
+    public CapacityDispatchPlanRepository capacityDispatchPlanRepository;
+
+    @Autowired
+    public InterconnectorRepository interconnectorRepository;
+
 }
