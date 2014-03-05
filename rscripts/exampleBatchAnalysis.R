@@ -1,10 +1,15 @@
 setwd("~/emlab-generation/rscripts/")
 <<<<<<< HEAD
+<<<<<<< HEAD
 user<-kaveri
 =======
 library(xtable)
 library(scales)
 >>>>>>> refs/remotes/EMLab/develop
+=======
+library(xtable)
+library(scales)
+>>>>>>> refs/remotes/Prad/develop
 source("rConfig.R")
 source("batchRunAnalysis.R")
 setwd(analysisFolder)
