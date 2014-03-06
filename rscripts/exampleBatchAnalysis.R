@@ -1,11 +1,16 @@
 setwd("~/emlab-generation/rscripts/")
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 user<-kaveri
 =======
 library(xtable)
 library(scales)
 >>>>>>> refs/remotes/EMLab/develop
+=======
+library(xtable)
+library(scales)
+>>>>>>> refs/remotes/Prad/develop
 =======
 library(xtable)
 library(scales)
