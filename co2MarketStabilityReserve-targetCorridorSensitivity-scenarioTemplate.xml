@@ -31,41 +31,58 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 	<!-- Bean post processor to persist created beans -->
 	<bean class="agentspring.graphdb.PersistingBeanPostProcessor" />
 
+	<!-- Variables used more than once in the configuration file can be centrally placed here -->
+	<bean name="startCashGB" class="java.lang.String">
+	  <constructor-arg value="5e9" />
+	</bean>
+
+	<bean name="startCashCWE" class="java.lang.String">
+	  <constructor-arg value="20e9" />
+	</bean>
+
+	<bean name="priceMarkUp" class="java.lang.String">
+	  <constructor-arg value="1.1" />
+	</bean>
+
 	<!-- Decarbonization Model -->
 	<bean id="decarbonizationModel" class="emlab.gen.domain.agent.DecarbonizationModel"
-		p:name="Decarbonization Model" p:simulationLength="${simulationLength}"
+		p:name="Decarbonization Model" p:simulationLength="40"
 		p:co2TradingImplemented="true"
 		p:realRenewableDataImplemented="false"
 		p:iterationSpeedFactor="3" p:iterationSpeedCriterion="0.005"
 		p:capDeviationCriterion="0.03" p:deletionOldPPDPBidsAndCashFlowsEnabled="true"
-		p:deletionAge="2">
+		p:deletionAge="2" p:centralForecastBacklookingYears="5"
+		p:centralForecastingYear="3" p:centralCO2TargetReversionSpeedFactor="#centralCO2TargetReversionSpeedFactor"
+		p:centralPrivateDiscountingRate="#centralPrivateDiscountingRate" p:centralCO2BackSmoothingFactor="#centralCO2BackSmoothingFactor"
+		p:co2BankingIsImplemented="true"
+		p:stabilityReserveIsActive="#stabilityReserveActive"
+		p:stabilityReserveFirstYearOfOperation="#stabilityReserveFirstYearOfOperation"
+		p:stabilityReserveBankingFirstYear="#stabilityReserveBankingFirstYear"
+		p:stabilityReserveBankingSecondYear="#stabilityReserveBankingSecondYear"
+		p:stabilityReserveBankingThirdYear="#stabilityReserveBankingThirdYear">
 	</bean>
 
-	<bean class="emlab.gen.trend.TriangularTrend" id="demandGrowthTrendCWE"
-		p:start="${demandGrowthCWEStart}" p:min="${demandGrowthCWEMin}" p:max="${demandGrowthCWEMax}"
-		p:top="${demandGrowthCWETop}" />
-	<bean class="emlab.gen.trend.TriangularTrend" id="demandGrowthTrendGB"
-		p:start="${demandGrowthGBStart}" p:min="${demandGrowthGBMin}" p:max="${demandGrowthGBMax}"
-		p:top="${demandGrowthGBTop}" />
+	<bean id="demandGrowthTrendCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#demandPathandFilename" p:delimiter="," p:variableName="DemandCWE" />
+	<bean id="demandGrowthTrendGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#demandPathandFilename" p:delimiter="," p:variableName="DemandGB" />
 
 	<!-- Substances -->
 <!-- Substances -->
 	<bean id="coal" class="emlab.gen.domain.technology.Substance" p:name="Coal"
 		p:quality="1" p:energyDensity="1000" p:co2Density="0.095" p:unit="GJ"  />
 	<bean id="lignite" class="emlab.gen.domain.technology.Substance" p:name="Lignite"
-		p:quality="1" p:energyDensity="3600" p:co2Density="0.41" p:unit="MWh_th" />
+		p:quality="1" p:energyDensity="1000" p:co2Density="0.11389" p:unit="GJ" />
 	<bean id="naturalgas" class="emlab.gen.domain.technology.Substance"
 		p:name="Natural Gas" p:quality="1" p:energyDensity="1000" p:co2Density="0.05194" p:unit="GJ"/>
 	<bean id="biomass" class="emlab.gen.domain.technology.Substance"
-		p:name="Biomass" p:quality="0.5" p:energyDensity="25000"
-		p:co2Density="0" />
+		p:name="Biomass" p:quality="0.5" p:energyDensity="1000"
+		p:co2Density="0" p:unit="GJ" />
 	<bean id="uranium" class="emlab.gen.domain.technology.Substance"
-		p:name="Uranium" p:quality="1" p:energyDensity="3888000000"
-		p:co2Density="0" />
+		p:name="Uranium" p:quality="1" p:energyDensity="1000"
+		p:co2Density="0" p:unit="GJ" />
 	<bean id="electricity" class="emlab.gen.domain.technology.Substance"
-		p:name="Electricity" p:quality="1" p:energyDensity="0" p:co2Density="0" />
+		p:name="Electricity" p:quality="1" p:energyDensity="0" p:co2Density="0" p:unit="MWh_el" />
 	<bean id="co2" class="emlab.gen.domain.technology.Substance" p:name="CO2"
-		p:quality="1" p:energyDensity="0" p:co2Density="1" />
+		p:quality="1" p:energyDensity="0" p:co2Density="1" p:unit="tCO2" />
 
 	<!-- Zones -->
 	<bean id="cwe" class="emlab.gen.domain.gis.Zone" p:name="Country A" />
@@ -82,7 +99,7 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 	</bean>
 
 	<bean id="interconnectorCweGB" class="emlab.gen.domain.technology.Interconnector"
-		p:capacity="${interconnectorCapacity}">
+		p:capacity="3000">
 		<property name="connections">
 			<set>
 				<ref bean="cweNode" />
@@ -171,83 +188,83 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 	</bean>
 
 	<bean id="segment1cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment1cwe}">
+		p:baseLoad="88014.235">
 		<property name="segment" ref="segment1" />
 	</bean>
 	<bean id="segment2cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment2cwe}">
+		p:baseLoad="94334.565">
 		<property name="segment" ref="segment2" />
 	</bean>
 	<bean id="segment3cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment3cwe}">
+		p:baseLoad="100506.684">
 		<property name="segment" ref="segment3" />
 	</bean>
 	<bean id="segment4cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment4cwe}">
+		p:baseLoad="105485.474">
 		<property name="segment" ref="segment4" />
 	</bean>
 	<bean id="segment5cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment5cwe}">
+		p:baseLoad="110924.021">
 		<property name="segment" ref="segment5" />
 	</bean>
 	<bean id="segment6cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment6cwe}">
+		p:baseLoad="117229.902">
 		<property name="segment" ref="segment6" />
 	</bean>
 	<bean id="segment7cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment7cwe}">
+		p:baseLoad="123423.594">
 		<property name="segment" ref="segment7" />
 	</bean>
 	<bean id="segment8cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment8cwe}">
+		p:baseLoad="129296.598">
 		<property name="segment" ref="segment8" />
 	</bean>
 	<bean id="segment9cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment9cwe}">
+		p:baseLoad="135096.146">
 		<property name="segment" ref="segment9" />
 	</bean>
 	<bean id="segment10cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment10cwe}">
+		p:baseLoad="140841.038">
 		<property name="segment" ref="segment10" />
 	</bean>
 	<bean id="segment11cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment11cwe}">
+		p:baseLoad="146567.55">
 		<property name="segment" ref="segment11" />
 	</bean>
 	<bean id="segment12cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment12cwe}">
+		p:baseLoad="152512.635">
 		<property name="segment" ref="segment12" />
 	</bean>
 	<bean id="segment13cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment13cwe}">
+		p:baseLoad="158788.013">
 		<property name="segment" ref="segment13" />
 	</bean>
 	<bean id="segment14cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment14cwe}">
+		p:baseLoad="164570.272">
 		<property name="segment" ref="segment14" />
 	</bean>
 	<bean id="segment15cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment15cwe}">
+		p:baseLoad="170046.895">
 		<property name="segment" ref="segment15" />
 	</bean>
 	<bean id="segment16cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment16cwe}">
+		p:baseLoad="175934.373">
 		<property name="segment" ref="segment16" />
 	</bean>
 	<bean id="segment17cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment17cwe}">
+		p:baseLoad="181793.785">
 		<property name="segment" ref="segment17" />
 	</bean>
 	<bean id="segment18cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment18cwe}">
+		p:baseLoad="187841.77">
 		<property name="segment" ref="segment18" />
 	</bean>
 	<bean id="segment19cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment19cwe}">
+		p:baseLoad="194131.208">
 		<property name="segment" ref="segment19" />
 	</bean>
 	<bean id="segment20cwe" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment20cwe}">
+		p:baseLoad="200942.353">
 		<property name="segment" ref="segment20" />
 	</bean>
 
@@ -286,83 +303,83 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 	</bean>
 
 	<bean id="segment1gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment1gb}">
+		p:baseLoad="21635.058">
 		<property name="segment" ref="segment1" />
 	</bean>
 	<bean id="segment2gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment2gb}">
+		p:baseLoad="22845.075">
 		<property name="segment" ref="segment2" />
 	</bean>
 	<bean id="segment3gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment3gb}">
+		p:baseLoad="24298.494">
 		<property name="segment" ref="segment3" />
 	</bean>
 	<bean id="segment4gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment4gb}">
+		p:baseLoad="26666.06">
 		<property name="segment" ref="segment4" />
 	</bean>
 	<bean id="segment5gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment5gb}">
+		p:baseLoad="29216.713">
 		<property name="segment" ref="segment5" />
 	</bean>
 	<bean id="segment6gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment6gb}">
+		p:baseLoad="30705.211">
 		<property name="segment" ref="segment6" />
 	</bean>
 	<bean id="segment7gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment7gb}">
+		p:baseLoad="32503.788">
 		<property name="segment" ref="segment7" />
 	</bean>
 	<bean id="segment8gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment8gb}">
+		p:baseLoad="34441.81">
 		<property name="segment" ref="segment8" />
 	</bean>
 	<bean id="segment9gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment9gb}">
+		p:baseLoad="36596.475">
 		<property name="segment" ref="segment9" />
 	</bean>
 	<bean id="segment10gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment10gb}">
+		p:baseLoad="38679.033">
 		<property name="segment" ref="segment10" />
 	</bean>
 	<bean id="segment11gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment11gb}">
+		p:baseLoad="40524.111">
 		<property name="segment" ref="segment11" />
 	</bean>
 	<bean id="segment12gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment12gb}">
+		p:baseLoad="42287.693">
 		<property name="segment" ref="segment12" />
 	</bean>
 	<bean id="segment13gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment13gb}">
+		p:baseLoad="43825.349">
 		<property name="segment" ref="segment13" />
 	</bean>
 	<bean id="segment14gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment14gb}">
+		p:baseLoad="46311.807">
 		<property name="segment" ref="segment14" />
 	</bean>
 	<bean id="segment15gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment15gb}">
+		p:baseLoad="48371.95">
 		<property name="segment" ref="segment15" />
 	</bean>
 	<bean id="segment16gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment16gb}">
+		p:baseLoad="50398.729">
 		<property name="segment" ref="segment16" />
 	</bean>
 	<bean id="segment17gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment17gb}">
+		p:baseLoad="52275.273">
 		<property name="segment" ref="segment17" />
 	</bean>
 	<bean id="segment18gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment18gb}">
+		p:baseLoad="53780.58">
 		<property name="segment" ref="segment18" />
 	</bean>
 	<bean id="segment19gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment19gb}">
+		p:baseLoad="55011.488">
 		<property name="segment" ref="segment19" />
 	</bean>
 	<bean id="segment20gb" class="emlab.gen.domain.market.electricity.SegmentLoad"
-		p:baseLoad="${segment20gb}">
+		p:baseLoad="56714.643">
 		<property name="segment" ref="segment20" />
 	</bean>
 
@@ -774,17 +791,12 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:auction="true" p:referencePrice="0" p:name="CO2 auction" p:substance-ref="co2"/>
 
 	<!-- Fuel Prices -->
-	<bean id="coalPrice" class="emlab.gen.trend.TimeSeriesPropReader" p:timeSeriesStr="${coalPriceSeries}" />
-	<bean id="gasPrice" class="emlab.gen.trend.TimeSeriesPropReader" p:timeSeriesStr="${gasPriceSeries}" />
-	<bean id="biomassPrice" class="emlab.gen.trend.TriangularTrend"
-		p:start="${biomassPriceStart}" p:min="${biomassPriceMin}" p:max="${biomassPriceMax}"
-		p:top="${biomassPriceTop}" />
-	<bean id="uraniumPrice" class="emlab.gen.trend.TriangularTrend"
-		p:start="${uraniumPriceStart}" p:min="${uraniumPriceMin}" p:max="${uraniumPriceMax}"
-		p:top="${uraniumPriceTop}" />
-	<bean id="lignitePrice" class="emlab.gen.trend.TriangularTrend"
-		p:start="5.14" p:min="0.99" p:max="1.01" p:top="1.00"/>
-
+	<bean id="coalPrice" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#fuelPricePathAndFileName" p:delimiter="," p:variableName="#CoalScenario" />
+	<bean id="gasPrice" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#fuelPricePathAndFileName" p:delimiter="," p:variableName="#GasScenario" />
+	<bean id="biomassPrice" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#fuelPricePathAndFileName" p:delimiter="," p:variableName="Biomass" />
+	<bean id="uraniumPrice" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#fuelPricePathAndFileName" p:delimiter="," p:variableName="Uranium" />
+	<bean id="lignitePrice" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#fuelPricePathAndFileName" p:delimiter="," p:variableName="Lignite" />
+	
 	<!-- Agents -->
 	<bean id="coalSupplier" class="emlab.gen.domain.agent.CommoditySupplier">
 		<property name="name" value="Coal supplier" />
@@ -823,7 +835,7 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 	</bean>
 
 	<bean id="energyProducerA" class="emlab.gen.domain.agent.EnergyProducer"
-		p:name="Energy Producer A" p:cash="${startCashGB}"
+		p:name="Energy Producer A" p:cash-ref="startCashGB"
 		p:investmentRole-ref="standardInvestmentRole"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="7" p:pastTimeHorizon="5"
@@ -831,11 +843,12 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:debtRatioOfInvestments="0.7"
 		p:dismantlingProlongingYearsAfterTechnicalLifetime="0"
 		p:dismantlingRequiredOperatingProfit="0" p:downpaymentFractionOfCash="0.5"
-		p:willingToInvest="true" p:priceMarkUp="${priceMarkUp}" 
+		p:willingToInvest="true" p:priceMarkUp-ref="priceMarkUp" 
 		p:numberOfYearsBacklookingForForecasting="5"
-		p:investorMarket-ref="gbElectricitySpotMarket"/>
+		p:investorMarket-ref="gbElectricitySpotMarket"
+		p:co2Allowances="29850687.601992195"/>
 	<bean id="energyProducerB" class="emlab.gen.domain.agent.EnergyProducer"
-		p:name="Energy Producer B" p:cash="${startCashGB}"
+		p:name="Energy Producer B" p:cash-ref="startCashGB"
 		p:investmentRole-ref="standardInvestmentRole"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="6" p:pastTimeHorizon="5"
@@ -843,11 +856,12 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:debtRatioOfInvestments="0.7"
 		p:dismantlingProlongingYearsAfterTechnicalLifetime="0"
 		p:dismantlingRequiredOperatingProfit="0" p:downpaymentFractionOfCash="0.5"
-		p:willingToInvest="true" p:priceMarkUp="${priceMarkUp}" 
+		p:willingToInvest="true" p:priceMarkUp-ref="priceMarkUp" 
 		p:numberOfYearsBacklookingForForecasting="6"
-		p:investorMarket-ref="gbElectricitySpotMarket"/>
+		p:investorMarket-ref="gbElectricitySpotMarket"
+		p:co2Allowances="29850687.601992195"/>
 	<bean id="energyProducerC" class="emlab.gen.domain.agent.EnergyProducer"
-		p:name="Energy Producer C" p:cash="${startCashGB}"
+		p:name="Energy Producer C" p:cash-ref="startCashGB"
 		p:investmentRole-ref="standardInvestmentRole"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="8" p:pastTimeHorizon="5"
@@ -855,11 +869,12 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:debtRatioOfInvestments="0.7"
 		p:dismantlingProlongingYearsAfterTechnicalLifetime="0"
 		p:dismantlingRequiredOperatingProfit="0" p:downpaymentFractionOfCash="0.5"
-		p:willingToInvest="true" p:priceMarkUp="${priceMarkUp}" 
+		p:willingToInvest="true" p:priceMarkUp-ref="priceMarkUp" 
 		p:numberOfYearsBacklookingForForecasting="4"
-		p:investorMarket-ref="gbElectricitySpotMarket"/>
+		p:investorMarket-ref="gbElectricitySpotMarket"
+		p:co2Allowances="29850687.601992195"/>
 	<bean id="energyProducerD" class="emlab.gen.domain.agent.EnergyProducer"
-		p:name="Energy Producer D" p:cash="${startCashGB}"
+		p:name="Energy Producer D" p:cash-ref="startCashGB"
 		p:investmentRole-ref="standardInvestmentRole"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="7" p:pastTimeHorizon="5"
@@ -867,23 +882,12 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:debtRatioOfInvestments="0.7"
 		p:dismantlingProlongingYearsAfterTechnicalLifetime="0"
 		p:dismantlingRequiredOperatingProfit="0" p:downpaymentFractionOfCash="0.5"
-		p:willingToInvest="true" p:priceMarkUp="${priceMarkUp}" 
+		p:willingToInvest="true" p:priceMarkUp-ref="priceMarkUp" 
 		p:numberOfYearsBacklookingForForecasting="5"
-		p:investorMarket-ref="gbElectricitySpotMarket"/>
+		p:investorMarket-ref="gbElectricitySpotMarket"
+		p:co2Allowances="29850687.601992195"/>
 	<bean id="energyProducerE" class="emlab.gen.domain.agent.EnergyProducer"
-		p:name="Energy Producer E" p:cash="${startCashGB}"
-		p:investmentRole-ref="standardInvestmentRole"
-		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
-		p:investmentFutureTimeHorizon="7" p:pastTimeHorizon="5"
-		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
-		p:debtRatioOfInvestments="0.7"
-		p:dismantlingProlongingYearsAfterTechnicalLifetime="0"
-		p:dismantlingRequiredOperatingProfit="0" p:downpaymentFractionOfCash="0.5"
-		p:willingToInvest="true" p:priceMarkUp="${priceMarkUp}" 
-		p:numberOfYearsBacklookingForForecasting="5"
-		p:investorMarket-ref="gbElectricitySpotMarket"/>
-	<bean id="energyProducerF" class="emlab.gen.domain.agent.EnergyProducer"
-		p:name="Energy Producer F" p:cash="${startCashCWE}"
+		p:name="Energy Producer E" p:cash-ref="startCashCWE"
 		p:investmentRole-ref="standardInvestmentRole"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="6" p:pastTimeHorizon="5"
@@ -891,10 +895,11 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:debtRatioOfInvestments="0.7"
 		p:dismantlingProlongingYearsAfterTechnicalLifetime="0"
 		p:dismantlingRequiredOperatingProfit="0" p:downpaymentFractionOfCash="0.5"
-		p:willingToInvest="true" p:priceMarkUp="${priceMarkUp}"  p:numberOfYearsBacklookingForForecasting="4"
-		p:investorMarket-ref="cweElectricitySpotMarket"/>
-	<bean id="energyProducerG" class="emlab.gen.domain.agent.EnergyProducer"
-		p:name="Energy Producer G" p:cash="${startCashCWE}"
+		p:willingToInvest="true" p:priceMarkUp-ref="priceMarkUp"  p:numberOfYearsBacklookingForForecasting="4"
+		p:investorMarket-ref="cweElectricitySpotMarket"
+		p:co2Allowances="81733433.592424007"/>
+	<bean id="energyProducerF" class="emlab.gen.domain.agent.EnergyProducer"
+		p:name="Energy Producer F" p:cash-ref="startCashCWE"
 		p:investmentRole-ref="standardInvestmentRole"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="8" p:pastTimeHorizon="5"
@@ -902,10 +907,24 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:debtRatioOfInvestments="0.7"
 		p:dismantlingProlongingYearsAfterTechnicalLifetime="0"
 		p:dismantlingRequiredOperatingProfit="0" p:downpaymentFractionOfCash="0.5"
-		p:willingToInvest="true" p:priceMarkUp="${priceMarkUp}"  p:numberOfYearsBacklookingForForecasting="6"
-		p:investorMarket-ref="cweElectricitySpotMarket"/>
+		p:willingToInvest="true" p:priceMarkUp-ref="priceMarkUp"  p:numberOfYearsBacklookingForForecasting="6"
+		p:investorMarket-ref="cweElectricitySpotMarket"
+		p:co2Allowances="81733433.592424007"/>
+	<bean id="energyProducerG" class="emlab.gen.domain.agent.EnergyProducer"
+		p:name="Energy Producer G" p:cash-ref="startCashCWE"
+		p:investmentRole-ref="standardInvestmentRole"
+		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
+		p:investmentFutureTimeHorizon="7" p:pastTimeHorizon="5"
+		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
+		p:debtRatioOfInvestments="0.7"
+		p:dismantlingProlongingYearsAfterTechnicalLifetime="0"
+		p:dismantlingRequiredOperatingProfit="0" p:downpaymentFractionOfCash="0.5"
+		p:willingToInvest="true" p:priceMarkUp-ref="priceMarkUp" 
+		p:numberOfYearsBacklookingForForecasting="5"
+		p:investorMarket-ref="cweElectricitySpotMarket"
+		p:co2Allowances="81733433.592424007"/>
 	<bean id="energyProducerH" class="emlab.gen.domain.agent.EnergyProducer"
-		p:name="Energy Producer H" p:cash="${startCashCWE}"
+		p:name="Energy Producer H" p:cash-ref="startCashCWE"
 		p:investmentRole-ref="standardInvestmentRole"
 		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
 		p:investmentFutureTimeHorizon="7" p:pastTimeHorizon="5"
@@ -913,29 +932,18 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:debtRatioOfInvestments="0.7"
 		p:dismantlingProlongingYearsAfterTechnicalLifetime="0"
 		p:dismantlingRequiredOperatingProfit="0" p:downpaymentFractionOfCash="0.5"
-		p:willingToInvest="true" p:priceMarkUp="${priceMarkUp}" 
+		p:willingToInvest="true" p:priceMarkUp-ref="priceMarkUp"
 		p:numberOfYearsBacklookingForForecasting="5"
-		p:investorMarket-ref="cweElectricitySpotMarket"/>
-	<bean id="energyProducerI" class="emlab.gen.domain.agent.EnergyProducer"
-		p:name="Energy Producer I" p:cash="${startCashCWE}"
-		p:investmentRole-ref="standardInvestmentRole"
-		p:longTermContractMargin="0.1" p:longTermContractPastTimeHorizon="3"
-		p:investmentFutureTimeHorizon="7" p:pastTimeHorizon="5"
-		p:equityInterestRate="0.12" p:loanInterestRate="0.09"
-		p:debtRatioOfInvestments="0.7"
-		p:dismantlingProlongingYearsAfterTechnicalLifetime="0"
-		p:dismantlingRequiredOperatingProfit="0" p:downpaymentFractionOfCash="0.5"
-		p:willingToInvest="true" p:priceMarkUp="${priceMarkUp}"
-		p:numberOfYearsBacklookingForForecasting="5"
-		p:investorMarket-ref="cweElectricitySpotMarket"/>
+		p:investorMarket-ref="cweElectricitySpotMarket"
+		p:co2Allowances="81733433.592424007"/>
 
-	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestInPowerGenerationTechnologiesRole"/>
+	<bean id="standardInvestmentRole" class="emlab.gen.role.investment.InvestInPowerGenerationTechnologiesWithCO2ForecastRole"/>
 	<bean id="targetInvestmentRole" class="emlab.gen.role.investment.TargetInvestmentRole"/>
 	
 	<!-- Renewable Targets CWE -->
 	
 	<bean id="renewableTargetInvestorCountryCWE" class="emlab.gen.domain.agent.TargetInvestor"
-	p:name="Renewable Target Investor CWE" p:cash="${startCashCWE}"
+	p:name="Renewable Target Investor CWE" p:cash-ref="startCashCWE"
 	p:investmentRole-ref="targetInvestmentRole"
 	p:priceMarkUp="1.0"
 	p:investorMarket-ref="cweElectricitySpotMarket"
@@ -956,32 +964,32 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 	<bean id="windTargetCountryCWE" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
 	p:trend-ref="windTrendCountryCWE" p:powerGeneratingTechnology-ref="windPGT"/>
 	
-	<bean id="windTrendCountryCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/policyGoalNREAP_CF_CWE.csv" p:delimiter="," p:variableName="WindOnshore"/>
+	<bean id="windTrendCountryCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#cweResPolicy" p:delimiter="," p:variableName="WindOnshore"/>
 	
 	<bean id="windOffshoreTargetCountryCWE" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
 	p:trend-ref="windOffshoreTrendCountryCWE" p:powerGeneratingTechnology-ref="windOffshorePGT"/>
 	
-	<bean id="windOffshoreTrendCountryCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/policyGoalNREAP_CF_CWE.csv" p:delimiter="," p:variableName="WindOffshore"/>
+	<bean id="windOffshoreTrendCountryCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#cweResPolicy" p:delimiter="," p:variableName="WindOffshore"/>
 	
 	<bean id="biomassTargetCountryCWE" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
 	p:trend-ref="biomassTrendCountryCWE" p:powerGeneratingTechnology-ref="biomassPGT"/>
 	
-	<bean id="biomassTrendCountryCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/policyGoalNREAP_CF_CWE.csv" p:delimiter="," p:variableName="BiomassSolid"/> 
+	<bean id="biomassTrendCountryCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#cweResPolicy" p:delimiter="," p:variableName="BiomassSolid"/> 
 	
 	<bean id="pvTargetCountryCWE" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
 	p:trend-ref="pvTrendCountryCWE" p:powerGeneratingTechnology-ref="photovoltaicPGT"/>
 	
-	<bean id="pvTrendCountryCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/policyGoalNREAP_CF_CWE.csv" p:delimiter="," p:variableName="Photovoltaic"/>
+	<bean id="pvTrendCountryCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#cweResPolicy" p:delimiter="," p:variableName="Photovoltaic"/>
 	
 	<bean id="biogasTargetCountryCWE" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
 	p:trend-ref="biogasTrendCountryCWE" p:powerGeneratingTechnology-ref="biogasPGT"/>
 	
-	<bean id="biogasTrendCountryCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/policyGoalNREAP_CF_CWE.csv" p:delimiter="," p:variableName="Biogas"/> 
+	<bean id="biogasTrendCountryCWE" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#cweResPolicy" p:delimiter="," p:variableName="Biogas"/> 
 	
 	<!-- Renewable Targets GB -->
 	
 	<bean id="renewableTargetInvestorCountryGB" class="emlab.gen.domain.agent.TargetInvestor"
-	p:name="Renewable Target Investor GB" p:cash="${startCashGB}"
+	p:name="Renewable Target Investor GB" p:cash-ref="startCashGB"
 	p:investmentRole-ref="targetInvestmentRole"
 	p:priceMarkUp="1.0"
 	p:investorMarket-ref="gbElectricitySpotMarket"
@@ -1001,27 +1009,27 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 	<bean id="windTargetCountryGB" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
 	p:trend-ref="windTrendCountryGB" p:powerGeneratingTechnology-ref="windPGT"/>
 	
-	<bean id="windTrendCountryGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/policyGoalNREAP_CF_UK.csv" p:delimiter="," p:variableName="WindOnshore"/>
+	<bean id="windTrendCountryGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#gbResPolicy" p:delimiter="," p:variableName="WindOnshore"/>
 	
 	<bean id="windOffshoreTargetCountryGB" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
 	p:trend-ref="windOffshoreTrendCountryGB" p:powerGeneratingTechnology-ref="windOffshorePGT"/>
 	
-	<bean id="windOffshoreTrendCountryGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/policyGoalNREAP_CF_UK.csv" p:delimiter="," p:variableName="WindOffshore"/>
+	<bean id="windOffshoreTrendCountryGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#gbResPolicy" p:delimiter="," p:variableName="WindOffshore"/>
 	
 	<bean id="biomassTargetCountryGB" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
 	p:trend-ref="biomassTrendCountryGB" p:powerGeneratingTechnology-ref="biomassPGT"/>
 	
-	<bean id="biomassTrendCountryGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/policyGoalNREAP_CF_UK.csv" p:delimiter="," p:variableName="BiomassSolid"/> 
+	<bean id="biomassTrendCountryGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#gbResPolicy" p:delimiter="," p:variableName="BiomassSolid"/> 
 	
 	<bean id="pvTargetCountryGB" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
 	p:trend-ref="pvTrendCountryGB" p:powerGeneratingTechnology-ref="photovoltaicPGT"/>
 	
-	<bean id="pvTrendCountryGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/policyGoalNREAP_CF_UK.csv" p:delimiter="," p:variableName="Photovoltaic"/>
+	<bean id="pvTrendCountryGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#gbResPolicy" p:delimiter="," p:variableName="Photovoltaic"/>
 	
 	<bean id="biogasTargetCountryGB" class="emlab.gen.domain.policy.PowerGeneratingTechnologyTarget"
 	p:trend-ref="biogasTrendCountryGB" p:powerGeneratingTechnology-ref="biogasPGT"/>
 	
-	<bean id="biogasTrendCountryGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/policyGoalNREAP_CF_UK.csv" p:delimiter="," p:variableName="Biogas"/> 
+	<bean id="biogasTrendCountryGB" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#gbResPolicy" p:delimiter="," p:variableName="Biogas"/> 
 	
 	<!-- PowerGenerationTechnology Node Limits -->
 	
@@ -1064,148 +1072,9 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 	<bean id="powerPlantMaintainer" class="emlab.gen.domain.agent.PowerPlantMaintainer"
 		p:name="Power Plant Maintainer" />
 
-	<bean id="cwePowerPortfolio" class="emlab.gen.domain.factory.ElectricityProducerFactory">
-		<property name="capacityMargin" value="0.5706494374" />
-		<property name="portfolioShares">
-			<map>
-				<entry>
-					<key>
-						<ref bean="coalPulverizedSuperCritical" />
-					</key>
-					<value>0.123</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="lignitePGT" />
-					</key>
-					<value>0.061</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="CCGT" />
-					</key>
-					<value>0.134</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="OCGT" />
-					</key>
-					<value>0.108</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="biogasPGT" />
-					</key>
-					<value>0.008</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="biomassPGT" />
-					</key>
-					<value>0.012</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="hydroPower" />
-					</key>
-					<value>0.080</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="nuclearPGT" />
-					</key>
-					<value>0.270</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="windPGT" />
-					</key>
-					<value>0.107</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="photovoltaicPGT" />
-					</key>
-					<value>0.058</value>
-				</entry>
-			</map>
-		</property>
-		<property name="nodes">
-			<set>
-				<ref bean="cweNode" />
-			</set>
-		</property>
-		<property name="market" ref="cweElectricitySpotMarket" />
-		<property name="producers">
-			<list>
-				<ref bean="energyProducerF" />
-				<ref bean="energyProducerG" />
-				<ref bean="energyProducerH" />
-				<ref bean="energyProducerI" />
-			</list>
-		</property>
-	</bean>
-
-	<bean id="gbPowerPortfolio" class="emlab.gen.domain.factory.ElectricityProducerFactory">
-		<property name="capacityMargin" value="0.545" />
-		<property name="portfolioShares">
-			<map>
-				<entry>
-					<key>
-						<ref bean="coalPulverizedSuperCritical" />
-					</key>
-					<value>0.307</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="CCGT" />
-					</key>
-					<value>0.262</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="OCGT" />
-					</key>
-					<value>0.188</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="biomassPGT" />
-					</key>
-					<value>0.0302</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="nuclearPGT" />
-					</key>
-					<value>0.119</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="windPGT" />
-					</key>
-					<value>0.047</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="photovoltaicPGT" />
-					</key>
-					<value>0.0</value>
-				</entry>
-				<entry>
-					<key>
-						<ref bean="hydroPower" />
-					</key>
-					<value>0.018</value>
-				</entry>
-			</map>
-		</property>
-		<property name="nodes">
-			<set>
-				<ref bean="gbNode" />
-			</set>
-		</property>
-		<property name="market" ref="gbElectricitySpotMarket" />
+	<!-- Power plant Factory -->
+	<bean id="PowerPlantList" class="emlab.gen.domain.factory.PowerPlantCSVFactory" 
+	p:csvFile="/data/powerPlantsCWEandUK.csv">
 		<property name="producers">
 			<list>
 				<ref bean="energyProducerA" />
@@ -1213,17 +1082,46 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 				<ref bean="energyProducerC" />
 				<ref bean="energyProducerD" />
 				<ref bean="energyProducerE" />
+				<ref bean="energyProducerF" />
+				<ref bean="energyProducerG" />
+				<ref bean="energyProducerH" />
+				<ref bean="renewableTargetInvestorCountryCWE" />
+				<ref bean="renewableTargetInvestorCountryGB" />
 			</list>
 		</property>
+		<property name="technologies">
+			<list>
+				<ref bean="CCGT" />
+				<ref bean="OCGT" />
+				<ref bean="coalPulverizedSuperCritical" />
+				<ref bean="lignitePGT" />
+				<ref bean="biomassPGT" />
+				<ref bean="biogasPGT" />
+				<ref bean="windPGT" />
+				<ref bean="windOffshorePGT" />
+				<ref bean="hydroPower" />
+				<ref bean="photovoltaicPGT" />
+				<ref bean="nuclearPGT" />
+			</list>
+		</property>
+		<property name="powerGridNodes">
+			<list>
+				<ref bean="cweNode"/>
+				<ref bean="gbNode"/>
+			</list>
+		</property>
+		
 	</bean>
 
+
+
 	<!-- CO2 Tax -->
-	<bean id="co2TaxTrend" class="emlab.gen.trend.StepTrend" p:start="${co2TaxStart}"
-		p:duration="${co2TaxDuration}" p:increment="${co2TaxIncrement}"
+	<bean id="co2TaxTrend" class="emlab.gen.trend.StepTrend" p:start="0"
+		p:duration="1" p:increment="0"
 		p:minValue="0" />
 
 	<!-- CO2 Cap -->
-	<bean id="co2CapTrend" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="/data/emissionCapCweUk.csv" />
+	<bean id="co2CapTrend" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#emissionCapTimeline" />
 	<!-- Minimum CO2 Price Trends -->
 	<bean id="minCo2PriceTrend" class="emlab.gen.trend.StepTrend" p:start="0"
 		p:duration="1" p:increment="0"
@@ -1237,13 +1135,35 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:duration="1" p:increment="0"
 		p:minValue="0" />
 
+	<bean id="co2PriceCeilingTrend" class="emlab.gen.trend.StepTrend" p:start="500"
+	p:duration="1" p:increment="0" />
+
+	<!-- CO2 Market Stability Reserve -->
+	<bean id="stabilityReserveUpperTriggerTrend" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#stabilityReserveUpperTriggerTrend" />
+
+	<bean id="stabilityReserveLowerTriggerTrend" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#stabilityReserveLowerTriggerTrend" />
+
+	<bean id="stabilityReserveReleaseQuantityTrend" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#stabilityReserveReleaseQuantityTrend" />
+
+	<bean id="stabilityReserveAddingMinimumTrend" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#stabilityReserveAddingMinimumTrend"/>
+
+	<bean id="stabilityReserveAddingPercentageTrend" class="emlab.gen.trend.TimeSeriesCSVReader" p:filename="#stabilityReserveAddingPercentageTrend" />
+
+	
+
 	<!-- Government -->
 	<bean id="government" class="emlab.gen.domain.agent.Government"
-		p:name="European Government" p:co2Penalty="500">
-		<property name="co2TaxTrend" ref="co2TaxTrend" />
-		<property name="co2CapTrend" ref="co2CapTrend" />
-		<property name="minCo2PriceTrend" ref="minCo2PriceTrend" />
-	</bean>
+		p:name="European Government"
+		p:stabilityReserve="0"
+		p:stabilityReserveUpperTriggerTrend-ref="stabilityReserveUpperTriggerTrend"
+		p:stabilityReserveLowerTriggerTrend-ref="stabilityReserveLowerTriggerTrend"
+		p:stabilityReserveAddingPercentageTrend-ref="stabilityReserveAddingPercentageTrend"
+		p:stabilityReserveAddingMinimumTrend-ref="stabilityReserveAddingMinimumTrend"
+		p:stabilityReserveReleaseQuantityTrend-ref="stabilityReserveReleaseQuantityTrend"
+		p:co2TaxTrend-ref="co2TaxTrend"
+		p:co2CapTrend-ref="co2CapTrend"
+		p:minCo2PriceTrend-ref="minCo2PriceTrend"
+		p:co2PriceCeilingTrend-ref="co2PriceCeilingTrend" />
 	
 	<bean id="governmentCWE" class="emlab.gen.domain.agent.NationalGovernment"
 		p:name="CWE Government">
@@ -1267,7 +1187,7 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:co2CaptureEffciency="0" 
 		p:depreciationTime="20"
 		p:minimumRunningHours="5000"
-		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="40"
+		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="50"
 		p:expectedLeadtime="4" p:expectedPermittime="1" p:minimumFuelQuality=".95"
 		p:maximumInstalledCapacityFractionInCountry="1"
 		p:maximumInstalledCapacityFractionPerAgent="1"
@@ -1296,7 +1216,7 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:co2CaptureEffciency="0" 
 		p:depreciationTime="20"
 		p:minimumRunningHours="5000"
-		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="40"
+		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="50"
 		p:expectedLeadtime="5" p:expectedPermittime="1" p:minimumFuelQuality=".95"
 		p:maximumInstalledCapacityFractionInCountry="1"
 		p:maximumInstalledCapacityFractionPerAgent="1"
@@ -1322,7 +1242,7 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:efficiencyTimeSeries-ref="igccEfficiencyTimeSeries" 
 		p:co2CaptureEffciency="0"
 		p:depreciationTime="20" p:minimumRunningHours="0"
-		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="40"
+		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="50"
 		p:expectedLeadtime="4" p:expectedPermittime="1" p:minimumFuelQuality=".9"
 		p:maximumInstalledCapacityFractionInCountry="1"
 		p:maximumInstalledCapacityFractionPerAgent="1"
@@ -1349,7 +1269,7 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:efficiencyTimeSeries-ref="coalPulverizedCSSEfficiencyTimeSeries" 
 		p:co2CaptureEffciency="0.875"
 		p:depreciationTime="20" p:minimumRunningHours="5000"
-		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="40"
+		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="50"
 		p:expectedLeadtime="4" p:expectedPermittime="1" p:minimumFuelQuality=".9"
 		p:maximumInstalledCapacityFractionInCountry="1"
 		p:maximumInstalledCapacityFractionPerAgent="1"
@@ -1376,7 +1296,7 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:efficiencyTimeSeries-ref="igccCCSEfficiencyTimeSeries" 
 		p:co2CaptureEffciency="0.875"
 		p:depreciationTime="20" p:minimumRunningHours="0"
-		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="40"
+		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="50"
 		p:expectedLeadtime="4" p:expectedPermittime="1" p:minimumFuelQuality=".9"
 		p:maximumInstalledCapacityFractionInCountry="1"
 		p:maximumInstalledCapacityFractionPerAgent="1"
@@ -1403,7 +1323,7 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:efficiencyTimeSeries-ref="ccgtEfficiencyTimeSeries" 
 		p:co2CaptureEffciency="0"
 		p:depreciationTime="15" p:minimumRunningHours="0"
-		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="30"
+		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="40"
 		p:expectedLeadtime="2" p:expectedPermittime="1" p:minimumFuelQuality="1"
 		p:maximumInstalledCapacityFractionInCountry="1"
 		p:maximumInstalledCapacityFractionPerAgent="1"
@@ -1429,7 +1349,7 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:efficiencyTimeSeries-ref="ccgtCCSEfficiencyTimeSeries" 
 		p:co2CaptureEffciency="0.85"
 		p:depreciationTime="15" p:minimumRunningHours="0"
-		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="30"
+		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="40"
 		p:expectedLeadtime="3" p:expectedPermittime="1" p:minimumFuelQuality="1"
 		p:maximumInstalledCapacityFractionInCountry="1"
 		p:maximumInstalledCapacityFractionPerAgent="1"
@@ -1483,7 +1403,7 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:co2CaptureEffciency="0" 
 		p:depreciationTime="15"
 		p:minimumRunningHours="5000"
-		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="30"
+		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="40"
 		p:expectedLeadtime="3" p:expectedPermittime="1" p:minimumFuelQuality="0.5"
 		p:maximumInstalledCapacityFractionInCountry="1"
 		p:maximumInstalledCapacityFractionPerAgent="1"
@@ -1580,8 +1500,8 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 		p:co2CaptureEffciency="0" 
 		p:depreciationTime="30"
 		p:minimumRunningHours="0"
-		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="50"
-		p:expectedLeadtime="2" p:expectedPermittime="1" p:minimumFuelQuality="1"
+		p:fixedOperatingCostModifierAfterLifetime=".05" p:expectedLifetime="100"
+		p:expectedLeadtime="5" p:expectedPermittime="2" p:minimumFuelQuality="1"
 		p:maximumInstalledCapacityFractionInCountry="1"
 		p:maximumInstalledCapacityFractionPerAgent="1"
 		p:baseSegmentDependentAvailability="0.0"
@@ -1642,11 +1562,5 @@ Transmission capacity is assumed to be 3016 in both directions, based on maximum
 	<bean id="nuclearInvestmentCostTimeSeries" class="emlab.gen.trend.GeometricTrend" p:growthRate="0" p:start="2874800" />
 	<bean id="nuclearFixedOperatingCostTimeSeries" class="emlab.gen.trend.GeometricTrend" p:growthRate="0" p:start="71870" />
 	<bean id="nuclearEfficiencyTimeSeries" class="emlab.gen.trend.GeometricTrend" p:growthRate="0.00001" p:start=".33" />
-
-	<!-- Parameter file -->
-	<bean id="projectPropertyConfigurer"
-		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-		<property name="location" value="classpath:scenarios/parametersU-MinCO2-resTarget.properties" />
-	</bean>
 
 </beans>
