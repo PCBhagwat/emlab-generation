@@ -34,7 +34,7 @@ import emlab.gen.domain.technology.PowerPlant;
 
 /**
  * @author JCRichstein
- *
+ * 
  */
 public class PowerPlantCSVFactory implements InitializingBean {
 
@@ -54,10 +54,9 @@ public class PowerPlantCSVFactory implements InitializingBean {
         logger.warn("Reading power plant from CSV file: " + csvFile);
         InputStreamReader inputStreamReader = new InputStreamReader(this.getClass().getResourceAsStream(csvFile));
 
-        CSVReader<PowerPlant> csvPersonReader = new CSVReaderBuilder<PowerPlant>(inputStreamReader).entryParser(
-                new PowerPlantEntryParser(producers, technologies, powerGridNodes))
-                .strategy(new CSVStrategy(',', '\"', '#', true, true))
-                .build();
+        CSVReader<PowerPlant> csvPersonReader = new CSVReaderBuilder<PowerPlant>(inputStreamReader)
+                .entryParser(new PowerPlantEntryParser(producers, technologies, powerGridNodes))
+                .strategy(new CSVStrategy(',', '\"', '#', true, true)).build();
         List<PowerPlant> powerplants = csvPersonReader.readAll();
     }
 
