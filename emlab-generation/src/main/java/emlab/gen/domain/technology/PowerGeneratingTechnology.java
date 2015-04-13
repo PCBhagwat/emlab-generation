@@ -80,6 +80,17 @@ public class PowerGeneratingTechnology {
 
     private double maximumLifeExtension;
 
+    // Added for UK capacity Market
+    private double NetPresentValue;
+
+    public double getNetPresentValue() {
+        return NetPresentValue;
+    }
+
+    public void setNetPresentValue(double netPresentValue) {
+        NetPresentValue = netPresentValue;
+    }
+
     public double getMaximumLifeExtension() {
         return maximumLifeExtension;
     }

@@ -38,7 +38,9 @@ import emlab.gen.domain.agent.StrategicReserveOperator;
 import emlab.gen.domain.contract.CashFlow;
 import emlab.gen.domain.contract.Loan;
 import emlab.gen.domain.gis.Zone;
+import emlab.gen.domain.market.Bid;
 import emlab.gen.domain.market.ClearingPoint;
+import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.domain.market.electricity.Segment;
@@ -347,10 +349,14 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                      * plants (which have the single largest NPV
                      */
 
+                    // Store NPV in the PowerplantTechnology
+                    technology.setNetPresentValue(projectValue);
+
                     if (projectValue > 0 && projectValue / plant.getActualNominalCapacity() > highestValue) {
                         highestValue = projectValue / plant.getActualNominalCapacity();
                         bestTechnology = plant.getTechnology();
                     }
+
                 }
 
             }
@@ -380,6 +386,49 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
             plant.createOrUpdateLoan(loan);
 
         } else {
+            // Create CapacityDispatchPlan for all powerplant technologies with
+            // NPV + CONE is greater than equal to 0
+            if (reps.capacityMarketRepository.findCapacityMarketForZone(market.getZone()) != null) {
+                CapacityMarket capacityMarket = reps.capacityMarketRepository.findCapacityMarketForZone(market
+                        .getZone());
+                double capacityMarketCap = capacityMarket.getRegulator().getCapacityMarketPriceCap();
+
+                for (PowerGeneratingTechnology technology : reps.genericRepository
+                        .findAll(PowerGeneratingTechnology.class)) {
+                    if (technology.getExpectedLeadtime() <= 4
+                            && technology.getNetPresentValue() + capacityMarketCap >= 0) {
+
+                        PowerPlant tempPlant = new PowerPlant();
+                        tempPlant.setTemporaryPlantforCapacityMarketBid(true);
+                        tempPlant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()),
+                                technology);
+                        PowerPlantManufacturer manufacturer = reps.genericRepository
+                                .findFirst(PowerPlantManufacturer.class);
+                        BigBank bigbank = reps.genericRepository.findFirst(BigBank.class);
+
+                        double investmentCostPayedByEquity = tempPlant.getActualInvestedCapital()
+                                * (1 - agent.getDebtRatioOfInvestments());
+                        double investmentCostPayedByDebt = tempPlant.getActualInvestedCapital()
+                                * agent.getDebtRatioOfInvestments();
+                        double downPayment = investmentCostPayedByEquity;
+                        createSpreadOutDownPayments(agent, manufacturer, downPayment, tempPlant);
+
+                        double amount = determineLoanAnnuities(investmentCostPayedByDebt, tempPlant.getTechnology()
+                                .getDepreciationTime(), agent.getLoanInterestRate());
+                        // logger.warn("Loan amount is: " + amount);
+                        Loan loan = reps.loanRepository.createLoan(agent, bigbank, amount, tempPlant.getTechnology()
+                                .getDepreciationTime(), getCurrentTick(), tempPlant);
+                        // Create the loan
+                        tempPlant.createOrUpdateLoan(loan);
+
+                        CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
+                        plan.specifyAndPersist(tempPlant, agent, capacityMarket, getCurrentTick(),
+                                (technology.getNetPresentValue() + capacityMarketCap), technology.getCapacity(),
+                                Bid.SUBMITTED);
+                    }
+                }
+            }
+
             // logger.warn("{} found no suitable technology anymore to invest in at tick "
             // + getCurrentTick(), agent);
             // agent will not participate in the next round of investment if

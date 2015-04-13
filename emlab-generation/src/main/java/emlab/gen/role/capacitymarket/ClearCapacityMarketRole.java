@@ -85,6 +85,9 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                     if (demand - (sumofSupplyBidsAccepted + currentCDP.getAmount()) >= -clearingEpsilon) {
                         acceptedPrice = currentCDP.getPrice();
                         currentCDP.setStatus(Bid.ACCEPTED);
+                        // if bid is accepted then construct the plant UK
+                        // Capacity Market
+                        currentCDP.getPlant().setTemporaryPlantforCapacityMarketBid(false);
                         currentCDP.setAcceptedAmount(currentCDP.getAmount());
                         sumofSupplyBidsAccepted = sumofSupplyBidsAccepted + currentCDP.getAmount();
                         // logger.warn("Price of this cdp is " +
@@ -95,6 +98,9 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                     else if (demand - (sumofSupplyBidsAccepted + currentCDP.getAmount()) < clearingEpsilon) {
 
                         currentCDP.setStatus(Bid.PARTLY_ACCEPTED);
+                        // if bid is accepted then construct the plant UK
+                        // Capacity Market
+                        currentCDP.getPlant().setTemporaryPlantforCapacityMarketBid(false);
                         currentCDP.setAcceptedAmount((sumofSupplyBidsAccepted - demand));
                         acceptedPrice = currentCDP.getPrice();
                         sumofSupplyBidsAccepted = sumofSupplyBidsAccepted + currentCDP.getAcceptedAmount();
@@ -122,6 +128,12 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
             // logger.warn("Current CDP Price " + currentCDP.getPrice());
             // logger.warn("Cumulatively accepted volume " +
             // sumofSupplyBidsAccepted);
+        }
+
+        for (CapacityDispatchPlan currentCDP : sortedListofCDP) {
+            if (currentCDP.getPlant().isTemporaryPlantforCapacityMarketBid = true) {
+                currentCDP.getPlant().dismantlePowerPlant(getCurrentTick());
+            }
         }
         // logger.warn("Demand for the capacity market at tick {} is " + demand,
         // getCurrentTick());

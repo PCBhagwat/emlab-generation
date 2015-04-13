@@ -91,6 +91,17 @@ public class PowerPlant {
     public double ageFraction;
     public double profitability;
 
+    // Added for UK Capacity Market
+    public boolean isTemporaryPlantforCapacityMarketBid = false;
+
+    public boolean isTemporaryPlantforCapacityMarketBid() {
+        return isTemporaryPlantforCapacityMarketBid;
+    }
+
+    public void setTemporaryPlantforCapacityMarketBid(boolean isTemporaryPlantforCapacityMarketBid) {
+        this.isTemporaryPlantforCapacityMarketBid = isTemporaryPlantforCapacityMarketBid;
+    }
+
     public double getProfitability() {
         return profitability;
     }
