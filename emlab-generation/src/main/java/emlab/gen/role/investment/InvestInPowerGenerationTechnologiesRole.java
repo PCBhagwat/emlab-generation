@@ -396,7 +396,7 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                 for (PowerGeneratingTechnology technology : reps.genericRepository
                         .findAll(PowerGeneratingTechnology.class)) {
                     if (technology.getExpectedLeadtime() <= 4
-                            && technology.getNetPresentValue() + capacityMarketCap >= 0) {
+                            && (technology.getNetPresentValue() / technology.getCapacity()) + capacityMarketCap >= 0) {
 
                         PowerPlant tempPlant = new PowerPlant();
                         tempPlant.setTemporaryPlantforCapacityMarketBid(true);
@@ -423,8 +423,8 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
 
                         CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
                         plan.specifyAndPersist(tempPlant, agent, capacityMarket, getCurrentTick(),
-                                (technology.getNetPresentValue() + capacityMarketCap), technology.getCapacity(),
-                                Bid.SUBMITTED);
+                                ((technology.getNetPresentValue() / tempPlant.getActualNominalCapacity()) * (-1)),
+                                technology.getCapacity(), Bid.SUBMITTED);
                     }
                 }
             }

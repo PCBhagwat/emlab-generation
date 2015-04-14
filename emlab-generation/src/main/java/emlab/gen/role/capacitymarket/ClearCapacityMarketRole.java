@@ -30,7 +30,7 @@ import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.repository.Reps;
 
 /**
- * @author Kaveri
+ *
  * 
  */
 
@@ -38,6 +38,7 @@ import emlab.gen.repository.Reps;
 public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements Role<Regulator> {
 
     // CapacityMarketRepository capacityMarketRepository;
+    // Provide cleared unbuilt power plants long term contract
 
     @Autowired
     Reps reps;
@@ -85,9 +86,6 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                     if (demand - (sumofSupplyBidsAccepted + currentCDP.getAmount()) >= -clearingEpsilon) {
                         acceptedPrice = currentCDP.getPrice();
                         currentCDP.setStatus(Bid.ACCEPTED);
-                        // if bid is accepted then construct the plant UK
-                        // Capacity Market
-                        currentCDP.getPlant().setTemporaryPlantforCapacityMarketBid(false);
                         currentCDP.setAcceptedAmount(currentCDP.getAmount());
                         sumofSupplyBidsAccepted = sumofSupplyBidsAccepted + currentCDP.getAmount();
                         // logger.warn("Price of this cdp is " +
@@ -98,9 +96,6 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                     else if (demand - (sumofSupplyBidsAccepted + currentCDP.getAmount()) < clearingEpsilon) {
 
                         currentCDP.setStatus(Bid.PARTLY_ACCEPTED);
-                        // if bid is accepted then construct the plant UK
-                        // Capacity Market
-                        currentCDP.getPlant().setTemporaryPlantforCapacityMarketBid(false);
                         currentCDP.setAcceptedAmount((sumofSupplyBidsAccepted - demand));
                         acceptedPrice = currentCDP.getPrice();
                         sumofSupplyBidsAccepted = sumofSupplyBidsAccepted + currentCDP.getAcceptedAmount();
@@ -130,11 +125,6 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
             // sumofSupplyBidsAccepted);
         }
 
-        for (CapacityDispatchPlan currentCDP : sortedListofCDP) {
-            if (currentCDP.getPlant().isTemporaryPlantforCapacityMarketBid = true) {
-                currentCDP.getPlant().dismantlePowerPlant(getCurrentTick());
-            }
-        }
         // logger.warn("Demand for the capacity market at tick {} is " + demand,
         // getCurrentTick());
 
@@ -163,6 +153,26 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
             logger.warn("MARKET UNCLEARED at price" + clearingPoint.getPrice());
             logger.warn("Clearing point Price {} and volume " + clearingPoint.getVolume(), clearingPoint.getPrice());
 
+        }
+        // For UK for all unbuilt cleared power plants set long term contracts
+        for (CapacityDispatchPlan plan : reps.capacityMarketRepository.findAllAcceptedCapacityDispatchPlansForTime(
+                market, getCurrentTick())) {
+            long currentLifeTime = getCurrentTick() - plan.getPlant().getConstructionStartTime()
+                    - plan.getPlant().getTechnology().getExpectedLeadtime()
+                    - plan.getPlant().getTechnology().getExpectedPermittime();
+
+            if (plan.getPlant().isTemporaryPlantforCapacityMarketBid == true || currentLifeTime < 0) {
+                plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
+                plan.getPlant().setCapacityContractPeriod(15);
+                plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);
+                plan.getPlant().setHasLongtermCapacityMarketContract(true);
+            }
+        }
+        // Delete all unbuilt power plants that do not clear.
+        for (CapacityDispatchPlan currentCDP : sortedListofCDP) {
+            if (currentCDP.getPlant().isTemporaryPlantforCapacityMarketBid = true) {
+                currentCDP.getPlant().dismantlePowerPlant(getCurrentTick());
+            }
         }
         // clearingPoint.persist();
         // logger.warn("is the market cleared? " + isTheMarketCleared);

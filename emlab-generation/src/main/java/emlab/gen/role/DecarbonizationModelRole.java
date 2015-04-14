@@ -197,26 +197,6 @@ public class DecarbonizationModelRole extends AbstractRole<DecarbonizationModel>
         logger.warn("        took: {} seconds.", timerMarket.seconds());
 
         /*
-         * Run Simple Capacity Market (start from tick 1, due to initialization
-         * requirements- it needs values (revenues from electricity sport
-         * market) from previous tick
-         */
-
-        if ((getCurrentTick() > 0) && (model.isSimpleCapacityMarketEnabled())) {
-            timerMarket.reset();
-            timerMarket.start();
-            logger.warn(" 2a. Run Simple Capacity Market");
-            for (CapacityMarket market : reps.capacityMarketRepository.findAll()) {
-                simpleCapacityMarketMainRole.act(market);
-            }
-
-            // exportLimiterRole.act(model);
-
-            timerMarket.stop();
-            logger.warn("        took: {} seconds.", timerMarket.seconds());
-        }
-
-        /*
          * Submit and select long-term electricity contracts
          */
 
@@ -387,6 +367,27 @@ public class DecarbonizationModelRole extends AbstractRole<DecarbonizationModel>
             }
             resetWillingnessToInvest();
         }
+
+        /*
+         * Run Simple Capacity Market (start from tick 1, due to initialization
+         * requirements- it needs values (revenues from electricity sport
+         * market) from previous tick
+         */
+
+        if ((getCurrentTick() > 0) && (model.isSimpleCapacityMarketEnabled())) {
+            timerMarket.reset();
+            timerMarket.start();
+            logger.warn(" 2a. Run Simple Capacity Market");
+            for (CapacityMarket market : reps.capacityMarketRepository.findAll()) {
+                simpleCapacityMarketMainRole.act(market);
+            }
+
+            // exportLimiterRole.act(model);
+
+            timerMarket.stop();
+            logger.warn("        took: {} seconds.", timerMarket.seconds());
+        }
+
         logger.warn("\t subsidized investment.");
         for (TargetInvestor targetInvestor : template.findAll(TargetInvestor.class)) {
             genericInvestmentRole.act(targetInvestor);

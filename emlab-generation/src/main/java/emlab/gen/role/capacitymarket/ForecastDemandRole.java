@@ -24,6 +24,7 @@ import agentspring.role.RoleComponent;
 import emlab.gen.domain.agent.Regulator;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
+import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.Reps;
 import emlab.gen.util.GeometricTrendRegression;
 
@@ -58,6 +59,13 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
          * // Computing Demand (the current year's demand is not considered for
          * // regression, as it is forecasted. double expectedDemandFactor = 0d;
          */
+        double longtermContractedCapacity = 0;
+        for (PowerPlant plant : reps.powerPlantRepository.findPowerPlantsInMarket(market)) {
+            if (plant.hasLongtermCapacityMarketContract == true) {
+                longtermContractedCapacity = longtermContractedCapacity + plant.getActualNominalCapacity();
+
+            }
+        }
 
         double expectedDemandFactor = 0d;
         if (getCurrentTick() < 2) {
@@ -81,7 +89,7 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
         double peakExpectedDemand = peakLoadforMarketNOtrend * expectedDemandFactor;
 
         // Compute demand target by multiplying reserve margin double double
-        double demandTarget = peakExpectedDemand * (1 + regulator.getReserveMargin());
+        double demandTarget = (peakExpectedDemand * (1 + regulator.getReserveMargin())) - longtermContractedCapacity;
 
         regulator.setDemandTarget(demandTarget);
 

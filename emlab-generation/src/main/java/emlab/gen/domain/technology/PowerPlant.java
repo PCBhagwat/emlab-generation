@@ -92,7 +92,34 @@ public class PowerPlant {
     public double profitability;
 
     // Added for UK Capacity Market
+    public boolean hasLongtermCapacityMarketContract = false;
     public boolean isTemporaryPlantforCapacityMarketBid = false;
+    public double capacityContractPeriod;
+    public double longtermcapacitycontractPrice;
+
+    public double getCapacityContractPeriod() {
+        return capacityContractPeriod;
+    }
+
+    public void setCapacityContractPeriod(double capacityContractPeriod) {
+        this.capacityContractPeriod = capacityContractPeriod;
+    }
+
+    public double getLongtermcapacitycontractPrice() {
+        return longtermcapacitycontractPrice;
+    }
+
+    public void setLongtermcapacitycontractPrice(double longtermcapacitycontractPrice) {
+        this.longtermcapacitycontractPrice = longtermcapacitycontractPrice;
+    }
+
+    public boolean isHasLongtermCapacityMarketContract() {
+        return hasLongtermCapacityMarketContract;
+    }
+
+    public void setHasLongtermCapacityMarketContract(boolean hasLongtermCapacityMarketContract) {
+        this.hasLongtermCapacityMarketContract = hasLongtermCapacityMarketContract;
+    }
 
     public boolean isTemporaryPlantforCapacityMarketBid() {
         return isTemporaryPlantforCapacityMarketBid;
