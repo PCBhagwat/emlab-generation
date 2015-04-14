@@ -33,6 +33,9 @@ public class Regulator extends DecarbonizationAgent implements Agent {
     @SimulationParameter(label = "Capacity Market Price Cap", from = 1000, to = 150000)
     private double capacityMarketPriceCap;
 
+    @SimulationParameter(label = "Long term Contract Length", from = 1, to = 30)
+    private long longTermCapacityContractLengthinYears;
+
     @SimulationParameter(label = "Reserve Margin", from = 0, to = 1)
     private double reserveMargin;
 
@@ -115,6 +118,14 @@ public class Regulator extends DecarbonizationAgent implements Agent {
 
     public void setZone(Zone zone) {
         this.zone = zone;
+    }
+
+    public long getLongTermCapacityContractLengthinYears() {
+        return longTermCapacityContractLengthinYears;
+    }
+
+    public void setLongTermCapacityContractLengthinYears(long longTermCapacityContractLengthinYears) {
+        this.longTermCapacityContractLengthinYears = longTermCapacityContractLengthinYears;
     }
 
 }
