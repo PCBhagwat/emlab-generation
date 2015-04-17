@@ -24,6 +24,7 @@ import agentspring.role.RoleComponent;
 import emlab.gen.domain.agent.Regulator;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
+import emlab.gen.domain.market.electricity.Segment;
 import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.Reps;
 import emlab.gen.util.GeometricTrendRegression;
@@ -61,8 +62,15 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
          */
         double longtermContractedCapacity = 0;
         for (PowerPlant plant : reps.powerPlantRepository.findPowerPlantsInMarket(market)) {
+            logger.warn("1 LongTerm Contract " + plant.hasLongtermCapacityMarketContract);
             if (plant.hasLongtermCapacityMarketContract == true) {
-                longtermContractedCapacity = longtermContractedCapacity + plant.getActualNominalCapacity();
+                ElectricitySpotMarket eMarket = reps.marketRepository.findElectricitySpotMarketForZone(plant
+                        .getLocation().getZone());
+                long numberOfSegments = reps.segmentRepository.count();
+                Segment peakSegment = reps.segmentRepository.findPeakSegmentforMarket(eMarket);
+                double capacity = plant.getAvailableCapacity(getCurrentTick(), peakSegment, numberOfSegments);
+
+                longtermContractedCapacity = longtermContractedCapacity + capacity;
 
             }
         }

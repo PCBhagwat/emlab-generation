@@ -44,7 +44,8 @@ import emlab.gen.repository.Reps;
 public class StochasticTargetInvestmentRole extends GenericInvestmentRole<StochasticTargetInvestor> {
 
     @Transient
-    @Autowired Reps reps;
+    @Autowired
+    Reps reps;
 
     @Override
     @Transactional
@@ -52,13 +53,13 @@ public class StochasticTargetInvestmentRole extends GenericInvestmentRole<Stocha
 
         logger.warn(targetInvestor.getName() + " making investments.");
 
-        for(PowerGeneratingTechnologyTarget target : targetInvestor.getPowerGenerationTechnologyTargets()){
+        for (PowerGeneratingTechnologyTarget target : targetInvestor.getPowerGenerationTechnologyTargets()) {
             PowerGeneratingTechnology pgt = target.getPowerGeneratingTechnology();
             logger.warn("\t looking at" + pgt.getName());
             PowerGeneratingTechnologyTargetFulfillment targetFulfillment = null;
             for (PowerGeneratingTechnologyTargetFulfillment tgtFulfillment : targetInvestor
                     .getPowerGeneratingTechnologyPercentageOfYearlyTargetFulfillments()) {
-                if(tgtFulfillment.getPowerGeneratingTechnology().getName().equals(pgt.getName()))
+                if (tgtFulfillment.getPowerGeneratingTechnology().getName().equals(pgt.getName()))
                     targetFulfillment = tgtFulfillment;
             }
 
@@ -68,8 +69,10 @@ public class StochasticTargetInvestmentRole extends GenericInvestmentRole<Stocha
                 reps.powerGeneratingTechnologyNodeLimitRepository.findOneByTechnologyAndMarket(pgt,
                         targetInvestor.getInvestorMarket());
 
-            long futureTimePoint = getCurrentTick()+pgt.getExpectedLeadtime()+pgt.getExpectedPermittime();
-            double expectedInstalledCapacity = reps.powerPlantRepository.calculateCapacityOfExpectedOperationalPowerPlantsInMarketAndTechnology(targetInvestor.getInvestorMarket(), pgt, futureTimePoint);
+            long futureTimePoint = getCurrentTick() + pgt.getExpectedLeadtime() + pgt.getExpectedPermittime();
+            double expectedInstalledCapacity = reps.powerPlantRepository
+                    .calculateCapacityOfExpectedOperationalPowerPlantsInMarketAndTechnology(
+                            targetInvestor.getInvestorMarket(), pgt, futureTimePoint);
             double pgtNodeLimit = Double.MAX_VALUE;
             // For simplicity using the market, instead of the node here. Needs
             // to be changed, if more than one node per market exists.
@@ -81,7 +84,8 @@ public class StochasticTargetInvestmentRole extends GenericInvestmentRole<Stocha
             logger.warn("TechName: " + pgt.getName() + ", EnergyProducer" + targetInvestor + ", time: "
                     + futureTimePoint);
             double expectedDismantledPowerPlantCapacityOfTechnologyAndOwner = reps.powerPlantRepository
-                    .calculateCapacityOfExpectedDismantledPowerPlantsByOwnerByTechnology(futureTimePoint, targetInvestor, pgt);
+                    .calculateCapacityOfExpectedDismantledPowerPlantsByOwnerByTechnology(futureTimePoint,
+                            targetInvestor, pgt);
             double targetInstallationDelta = (target.getTrend().getValue(futureTimePoint) - target.getTrend().getValue(
                     futureTimePoint - 1))
                     + expectedDismantledPowerPlantCapacityOfTechnologyAndOwner;
@@ -98,24 +102,26 @@ public class StochasticTargetInvestmentRole extends GenericInvestmentRole<Stocha
 
             if (installedCapacityDeviation > 0) {
 
-                double powerPlantCapacityRatio = installedCapacityDeviation/pgt.getCapacity();
+                double powerPlantCapacityRatio = installedCapacityDeviation / pgt.getCapacity();
 
                 PowerPlant plant = new PowerPlant();
-                plant.specifyNotPersist(getCurrentTick(), targetInvestor, installationNode, pgt);
-                plant.setActualNominalCapacity(pgt.getCapacity()*powerPlantCapacityRatio);
+                plant.specifyNotPersist(getCurrentTick(), targetInvestor, installationNode, pgt, false);
+                plant.setActualNominalCapacity(pgt.getCapacity() * powerPlantCapacityRatio);
                 PowerPlantManufacturer manufacturer = reps.genericRepository.findFirst(PowerPlantManufacturer.class);
                 BigBank bigbank = reps.genericRepository.findFirst(BigBank.class);
 
-                double investmentCostPayedByEquity = plant.getActualInvestedCapital() * (1 - targetInvestor.getDebtRatioOfInvestments())*powerPlantCapacityRatio;
-                double investmentCostPayedByDebt = plant.getActualInvestedCapital() * targetInvestor.getDebtRatioOfInvestments()*powerPlantCapacityRatio;
+                double investmentCostPayedByEquity = plant.getActualInvestedCapital()
+                        * (1 - targetInvestor.getDebtRatioOfInvestments()) * powerPlantCapacityRatio;
+                double investmentCostPayedByDebt = plant.getActualInvestedCapital()
+                        * targetInvestor.getDebtRatioOfInvestments() * powerPlantCapacityRatio;
                 double downPayment = investmentCostPayedByEquity;
                 createSpreadOutDownPayments(targetInvestor, manufacturer, downPayment, plant);
 
-                double amount = determineLoanAnnuities(investmentCostPayedByDebt, plant.getTechnology().getDepreciationTime(),
-                        targetInvestor.getLoanInterestRate());
+                double amount = determineLoanAnnuities(investmentCostPayedByDebt, plant.getTechnology()
+                        .getDepreciationTime(), targetInvestor.getLoanInterestRate());
                 // logger.warn("Loan amount is: " + amount);
-                Loan loan = reps.loanRepository.createLoan(targetInvestor, bigbank, amount, plant.getTechnology().getDepreciationTime(),
-                        getCurrentTick(), plant);
+                Loan loan = reps.loanRepository.createLoan(targetInvestor, bigbank, amount, plant.getTechnology()
+                        .getDepreciationTime(), getCurrentTick(), plant);
                 // Create the loan
                 plant.createOrUpdateLoan(loan);
 
@@ -124,8 +130,8 @@ public class StochasticTargetInvestmentRole extends GenericInvestmentRole<Stocha
 
     }
 
-    private void createSpreadOutDownPayments(EnergyProducer agent, PowerPlantManufacturer manufacturer, double totalDownPayment,
-            PowerPlant plant) {
+    private void createSpreadOutDownPayments(EnergyProducer agent, PowerPlantManufacturer manufacturer,
+            double totalDownPayment, PowerPlant plant) {
         int buildingTime = (int) plant.getActualLeadtime();
         for (int i = 0; i < buildingTime; i++) {
             reps.nonTransactionalCreateRepository.createCashFlow(agent, manufacturer, totalDownPayment / buildingTime,

@@ -190,6 +190,21 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
 
                 }
             }
+            if (plant.isTemporaryPlantforCapacityMarketBid == true) {
+
+                ElectricitySpotMarket eMarket = reps.marketRepository.findElectricitySpotMarketForZone(plant
+                        .getLocation().getZone());
+                long numberOfSegments = reps.segmentRepository.count();
+                Segment peakSegment = reps.segmentRepository.findPeakSegmentforMarket(eMarket);
+                double capacity = plant.getAvailableCapacity(getCurrentTick(), peakSegment, numberOfSegments);
+                CapacityMarket market = reps.capacityMarketRepository.findCapacityMarketForZone(plant.getLocation()
+                        .getZone());
+
+                CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
+                plan.specifyAndPersist(plant, producer, market, getCurrentTick(), plant.getCapacityMarketBidPrice(),
+                        capacity, Bid.SUBMITTED);
+
+            }
         }
     }
 }

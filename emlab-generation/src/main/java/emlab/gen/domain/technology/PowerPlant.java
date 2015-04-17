@@ -96,6 +96,15 @@ public class PowerPlant {
     public boolean isTemporaryPlantforCapacityMarketBid = false;
     public double capacityContractPeriod;
     public double longtermcapacitycontractPrice;
+    public double capacityMarketBidPrice;
+
+    public double getCapacityMarketBidPrice() {
+        return capacityMarketBidPrice;
+    }
+
+    public void setCapacityMarketBidPrice(double capacityMarketBidPrice) {
+        this.capacityMarketBidPrice = capacityMarketBidPrice;
+    }
 
     public double getCapacityContractPeriod() {
         return capacityContractPeriod;
@@ -527,17 +536,19 @@ public class PowerPlant {
      */
     @Transactional
     public void specifyAndPersist(long time, EnergyProducer energyProducer, PowerGridNode location,
-            PowerGeneratingTechnology technology) {
-        specifyNotPersist(time, energyProducer, location, technology);
+            PowerGeneratingTechnology technology, boolean tempBid) {
+        specifyNotPersist(time, energyProducer, location, technology, tempBid);
         this.persist();
     }
 
+    // Changed for UK Market
     public void specifyNotPersist(long time, EnergyProducer energyProducer, PowerGridNode location,
-            PowerGeneratingTechnology technology) {
+            PowerGeneratingTechnology technology, boolean tempBid) {
         String label = energyProducer.getName() + " - " + technology.getName();
         this.setName(label);
         this.setTechnology(technology);
         this.setOwner(energyProducer);
+        this.setTemporaryPlantforCapacityMarketBid(tempBid);
         this.setLocation(location);
         this.setConstructionStartTime(time);
         this.setActualLeadtime(this.technology.getExpectedLeadtime());

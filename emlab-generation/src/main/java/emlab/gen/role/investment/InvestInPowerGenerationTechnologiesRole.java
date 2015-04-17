@@ -38,9 +38,7 @@ import emlab.gen.domain.agent.StrategicReserveOperator;
 import emlab.gen.domain.contract.CashFlow;
 import emlab.gen.domain.contract.Loan;
 import emlab.gen.domain.gis.Zone;
-import emlab.gen.domain.market.Bid;
 import emlab.gen.domain.market.ClearingPoint;
-import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.domain.market.electricity.Segment;
@@ -148,7 +146,7 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
         for (PowerGeneratingTechnology technology : reps.genericRepository.findAll(PowerGeneratingTechnology.class)) {
 
             PowerPlant plant = new PowerPlant();
-            plant.specifyNotPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), technology);
+            plant.specifyNotPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), technology, false);
             // if too much capacity of this technology in the pipeline (not
             // limited to the 5 years)
             double expectedInstalledCapacityOfTechnology = reps.powerPlantRepository
@@ -267,9 +265,10 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                     double capacityRevenue = 0d;
                     double sumCapacityRevenue = 0d;
                     if ((agent.isSimpleCapacityMarketEnabled()) && (regulator != null)) {
-
+                        // Use previous year as starting point for long term
+                        // capacity market
                         long time = 0l;
-                        for (time = getCurrentTick(); time > getCurrentTick()
+                        for (time = getCurrentTick() - 1; time > getCurrentTick()
                                 - agent.getNumberOfYearsBacklookingForForecasting()
                                 && time > 0; time = time - 1) {
                             double capacityRevenueTemp = reps.capacityMarketRepository
@@ -350,7 +349,7 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                      */
 
                     // Store NPV in the PowerplantTechnology
-                    technology.setNetPresentValue(projectValue);
+                    technology.setNetPresentValue(projectValue / plant.getActualNominalCapacity());
 
                     if (projectValue > 0 && projectValue / plant.getActualNominalCapacity() > highestValue) {
                         highestValue = projectValue / plant.getActualNominalCapacity();
@@ -367,7 +366,7 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
             // getCurrentTick(), agent, bestTechnology);
 
             PowerPlant plant = new PowerPlant();
-            plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), bestTechnology);
+            plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), bestTechnology, false);
             PowerPlantManufacturer manufacturer = reps.genericRepository.findFirst(PowerPlantManufacturer.class);
             BigBank bigbank = reps.genericRepository.findFirst(BigBank.class);
 
@@ -386,45 +385,50 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
             plant.createOrUpdateLoan(loan);
 
         } else {
-            // Create CapacityDispatchPlan for all powerplant technologies with
+
+            // Create CapacityDispatchPlan for all power plant technologies with
             // NPV + CONE is greater than equal to 0
             if (reps.capacityMarketRepository.findCapacityMarketForZone(market.getZone()) != null) {
+
                 CapacityMarket capacityMarket = reps.capacityMarketRepository.findCapacityMarketForZone(market
                         .getZone());
+
                 double capacityMarketCap = capacityMarket.getRegulator().getCapacityMarketPriceCap();
 
                 for (PowerGeneratingTechnology technology : reps.genericRepository
                         .findAll(PowerGeneratingTechnology.class)) {
-                    if (technology.getExpectedLeadtime() <= 4
-                            && (technology.getNetPresentValue() / technology.getCapacity()) + capacityMarketCap >= 0) {
 
-                        PowerPlant tempPlant = new PowerPlant();
-                        tempPlant.setTemporaryPlantforCapacityMarketBid(true);
-                        tempPlant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()),
-                                technology);
+                    if (technology.getExpectedLeadtime() + technology.getExpectedPermittime() <= 4
+                            && technology.getNetPresentValue() + capacityMarketCap >= 0) {
+
+                        PowerPlant plant = new PowerPlant();
+                        plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), technology,
+                                true);
+
                         PowerPlantManufacturer manufacturer = reps.genericRepository
                                 .findFirst(PowerPlantManufacturer.class);
+
                         BigBank bigbank = reps.genericRepository.findFirst(BigBank.class);
 
-                        double investmentCostPayedByEquity = tempPlant.getActualInvestedCapital()
+                        double investmentCostPayedByEquity = plant.getActualInvestedCapital()
                                 * (1 - agent.getDebtRatioOfInvestments());
-                        double investmentCostPayedByDebt = tempPlant.getActualInvestedCapital()
+                        double investmentCostPayedByDebt = plant.getActualInvestedCapital()
                                 * agent.getDebtRatioOfInvestments();
                         double downPayment = investmentCostPayedByEquity;
-                        createSpreadOutDownPayments(agent, manufacturer, downPayment, tempPlant);
+                        createSpreadOutDownPayments(agent, manufacturer, downPayment, plant);
 
-                        double amount = determineLoanAnnuities(investmentCostPayedByDebt, tempPlant.getTechnology()
+                        double amount = determineLoanAnnuities(investmentCostPayedByDebt, plant.getTechnology()
                                 .getDepreciationTime(), agent.getLoanInterestRate());
-                        // logger.warn("Loan amount is: " + amount);
-                        Loan loan = reps.loanRepository.createLoan(agent, bigbank, amount, tempPlant.getTechnology()
-                                .getDepreciationTime(), getCurrentTick(), tempPlant);
-                        // Create the loan
-                        tempPlant.createOrUpdateLoan(loan);
 
-                        CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
-                        plan.specifyAndPersist(tempPlant, agent, capacityMarket, getCurrentTick(),
-                                ((technology.getNetPresentValue() / tempPlant.getActualNominalCapacity()) * (-1)),
-                                technology.getCapacity(), Bid.SUBMITTED);
+                        // logger.warn("Loan amount is: " + amount);
+                        Loan loan = reps.loanRepository.createLoan(agent, bigbank, amount, plant.getTechnology()
+                                .getDepreciationTime(), getCurrentTick(), plant);
+
+                        // Create the loan
+                        plant.createOrUpdateLoan(loan);
+
+                        plant.setCapacityMarketBidPrice(100000);
+                        plant.persist();
                     }
                 }
             }
@@ -578,7 +582,7 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                     PowerPlant plant = new PowerPlant();
                     plant.specifyNotPersist(getCurrentTick(), new EnergyProducer(),
                             reps.powerGridNodeRepository.findFirstPowerGridNodeByElectricitySpotMarket(market),
-                            pggt.getPowerGeneratingTechnology());
+                            pggt.getPowerGeneratingTechnology(), false);
                     plant.setActualNominalCapacity(targetDifference);
                     double plantMarginalCost = determineExpectedMarginalCost(plant, fuelPrices, co2price);
                     marginalCostMap.put(plant, plantMarginalCost);
