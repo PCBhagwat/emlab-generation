@@ -404,32 +404,11 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                         PowerPlant plant = new PowerPlant();
                         plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), technology,
                                 true);
-
-                        PowerPlantManufacturer manufacturer = reps.genericRepository
-                                .findFirst(PowerPlantManufacturer.class);
-
-                        BigBank bigbank = reps.genericRepository.findFirst(BigBank.class);
-
-                        double investmentCostPayedByEquity = plant.getActualInvestedCapital()
-                                * (1 - agent.getDebtRatioOfInvestments());
-                        double investmentCostPayedByDebt = plant.getActualInvestedCapital()
-                                * agent.getDebtRatioOfInvestments();
-                        double downPayment = investmentCostPayedByEquity;
-                        createSpreadOutDownPayments(agent, manufacturer, downPayment, plant);
-
-                        double amount = determineLoanAnnuities(investmentCostPayedByDebt, plant.getTechnology()
-                                .getDepreciationTime(), agent.getLoanInterestRate());
-
-                        // logger.warn("Loan amount is: " + amount);
-                        Loan loan = reps.loanRepository.createLoan(agent, bigbank, amount, plant.getTechnology()
-                                .getDepreciationTime(), getCurrentTick(), plant);
-
-                        // Create the loan
-                        plant.createOrUpdateLoan(loan);
-
                         plant.setCapacityMarketBidPrice(100000);
                         plant.persist();
+
                     }
+
                 }
             }
 

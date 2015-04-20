@@ -93,7 +93,7 @@ public class PowerPlant {
 
     // Added for UK Capacity Market
     public boolean hasLongtermCapacityMarketContract = false;
-    public boolean isTemporaryPlantforCapacityMarketBid = false;
+    public boolean isTemporaryPlantforCapacityMarketBid;
     public double capacityContractPeriod;
     public double longtermcapacitycontractPrice;
     public double capacityMarketBidPrice;

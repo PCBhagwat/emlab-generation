@@ -22,11 +22,18 @@ import org.springframework.transaction.annotation.Transactional;
 import agentspring.role.AbstractRole;
 import agentspring.role.Role;
 import agentspring.role.RoleComponent;
+import emlab.gen.domain.agent.BigBank;
+import emlab.gen.domain.agent.EnergyProducer;
+import emlab.gen.domain.agent.PowerPlantManufacturer;
 import emlab.gen.domain.agent.Regulator;
+import emlab.gen.domain.contract.CashFlow;
+import emlab.gen.domain.contract.Loan;
 import emlab.gen.domain.market.Bid;
 import emlab.gen.domain.market.capacity.CapacityClearingPoint;
 import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
+import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
+import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.Reps;
 
 /**
@@ -161,17 +168,47 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                     - plan.getPlant().getTechnology().getExpectedLeadtime()
                     - plan.getPlant().getTechnology().getExpectedPermittime();
 
-            if (plan.getPlant().isTemporaryPlantforCapacityMarketBid == true || currentLifeTime < 0) {
+            if (plan.getPlant().isTemporaryPlantforCapacityMarketBid() == true) {
+
+                PowerPlantManufacturer manufacturer = reps.genericRepository.findFirst(PowerPlantManufacturer.class);
+
+                BigBank bigbank = reps.genericRepository.findFirst(BigBank.class);
+
+                double investmentCostPayedByEquity = plan.getPlant().getActualInvestedCapital()
+                        * (1 - plan.getPlant().getOwner().getDebtRatioOfInvestments());
+                double investmentCostPayedByDebt = plan.getPlant().getActualInvestedCapital()
+                        * plan.getPlant().getOwner().getDebtRatioOfInvestments();
+                double downPayment = investmentCostPayedByEquity;
+                createSpreadOutDownPayments(plan.getPlant().getOwner(), manufacturer, downPayment, plan.getPlant());
+
+                double amount = determineLoanAnnuities(investmentCostPayedByDebt, plan.getPlant().getTechnology()
+                        .getDepreciationTime(), plan.getPlant().getOwner().getLoanInterestRate());
+
+                // logger.warn("Loan amount is: " + amount);
+                Loan loan = reps.loanRepository.createLoan(plan.getBidder(), bigbank, amount, plan.getPlant()
+                        .getTechnology().getDepreciationTime(), getCurrentTick(), plan.getPlant());
+
+                // Create the loan
+                plan.getPlant().createOrUpdateLoan(loan);
                 plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
                 plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractLengthinYears());
                 plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);
                 plan.getPlant().setHasLongtermCapacityMarketContract(true);
+                plan.getPlant().persist();
+            }
+            if (currentLifeTime < 0) {
+                plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
+                plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractLengthinYears());
+                plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);
+                plan.getPlant().setHasLongtermCapacityMarketContract(true);
+                plan.getPlant().persist();
             }
         }
         // Delete all unbuilt power plants that do not clear.
-        for (CapacityDispatchPlan currentCDP : sortedListofCDP) {
-            if (currentCDP.getPlant().isTemporaryPlantforCapacityMarketBid = true) {
-                currentCDP.getPlant().dismantlePowerPlant(getCurrentTick());
+        ElectricitySpotMarket eMarket = reps.marketRepository.findElectricitySpotMarketForZone(market.getZone());
+        for (PowerPlant plant : reps.powerPlantRepository.findPowerPlantsInMarket(eMarket)) {
+            if (plant.isTemporaryPlantforCapacityMarketBid() == true) {
+                plant.dismantlePowerPlant(getCurrentTick());
             }
         }
         // clearingPoint.persist();
@@ -204,6 +241,25 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
             return capacityMarketPriceCap;
         else
             return acceptedPrice;
+    }
+
+    public double determineLoanAnnuities(double totalLoan, double payBackTime, double interestRate) {
+
+        double q = 1 + interestRate;
+        double annuity = totalLoan * (Math.pow(q, payBackTime) * (q - 1)) / (Math.pow(q, payBackTime) - 1);
+
+        return annuity;
+    }
+
+    @Transactional
+    private void createSpreadOutDownPayments(EnergyProducer agent, PowerPlantManufacturer manufacturer,
+            double totalDownPayment, PowerPlant plant) {
+        int buildingTime = (int) plant.getActualLeadtime();
+        reps.nonTransactionalCreateRepository.createCashFlow(agent, manufacturer, totalDownPayment / buildingTime,
+                CashFlow.DOWNPAYMENT, getCurrentTick(), plant);
+        Loan downpayment = reps.loanRepository.createLoan(agent, manufacturer, totalDownPayment / buildingTime,
+                buildingTime - 1, getCurrentTick(), plant);
+        plant.createOrUpdateDownPayment(downpayment);
     }
 
 }

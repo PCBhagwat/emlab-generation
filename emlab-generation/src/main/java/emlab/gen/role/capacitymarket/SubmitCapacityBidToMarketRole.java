@@ -64,11 +64,11 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
             long currentLifeTime = getCurrentTick() - plant.getConstructionStartTime()
                     - plant.getTechnology().getExpectedLeadtime() - plant.getTechnology().getExpectedPermittime();
 
-            if (plant.isTemporaryPlantforCapacityMarketBid != true && plant.hasLongtermCapacityMarketContract != true
+            if (plant.isTemporaryPlantforCapacityMarketBid() != true && plant.hasLongtermCapacityMarketContract != true
                     && currentLifeTime > -4) {
 
                 // logger.warn("Bid calculation for PowerPlant " +
-                // plant.getName());
+                // plant.isTemporaryPlantforCapacityMarketBid());
                 // get market for the plant by zone
                 CapacityMarket market = reps.capacityMarketRepository.findCapacityMarketForZone(plant.getLocation()
                         .getZone());
@@ -190,13 +190,10 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
 
                 }
             }
-            if (plant.isTemporaryPlantforCapacityMarketBid == true) {
+            if (plant.isTemporaryPlantforCapacityMarketBid() == true) {
 
-                ElectricitySpotMarket eMarket = reps.marketRepository.findElectricitySpotMarketForZone(plant
-                        .getLocation().getZone());
-                long numberOfSegments = reps.segmentRepository.count();
-                Segment peakSegment = reps.segmentRepository.findPeakSegmentforMarket(eMarket);
-                double capacity = plant.getAvailableCapacity(getCurrentTick(), peakSegment, numberOfSegments);
+                double capacity = plant.getTechnology().getCapacity()
+                        * plant.getTechnology().getPeakSegmentDependentAvailability();
                 CapacityMarket market = reps.capacityMarketRepository.findCapacityMarketForZone(plant.getLocation()
                         .getZone());
 
