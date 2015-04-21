@@ -64,8 +64,8 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
             long currentLifeTime = getCurrentTick() - plant.getConstructionStartTime()
                     - plant.getTechnology().getExpectedLeadtime() - plant.getTechnology().getExpectedPermittime();
 
-            if (plant.isTemporaryPlantforCapacityMarketBid() != true && plant.hasLongtermCapacityMarketContract != true
-                    && currentLifeTime > -4) {
+            if (plant.isTemporaryPlantforCapacityMarketBid() != true
+                    && plant.isHasLongtermCapacityMarketContract() != true && currentLifeTime > -4) {
 
                 // logger.warn("Bid calculation for PowerPlant " +
                 // plant.isTemporaryPlantforCapacityMarketBid());

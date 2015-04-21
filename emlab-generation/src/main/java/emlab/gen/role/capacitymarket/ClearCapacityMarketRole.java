@@ -162,55 +162,26 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
 
         }
         // For UK for all unbuilt cleared power plants set long term contracts
-        for (CapacityDispatchPlan plan : reps.capacityMarketRepository.findAllAcceptedCapacityDispatchPlansForTime(
-                market, getCurrentTick())) {
-            long currentLifeTime = getCurrentTick() - plan.getPlant().getConstructionStartTime()
-                    - plan.getPlant().getTechnology().getExpectedLeadtime()
-                    - plan.getPlant().getTechnology().getExpectedPermittime();
 
-            if (plan.getPlant().isTemporaryPlantforCapacityMarketBid() == true) {
+        updatePlantsClearedForLongTermCapacityContract(market, clearingPoint, regulator);
 
-                PowerPlantManufacturer manufacturer = reps.genericRepository.findFirst(PowerPlantManufacturer.class);
-
-                BigBank bigbank = reps.genericRepository.findFirst(BigBank.class);
-
-                double investmentCostPayedByEquity = plan.getPlant().getActualInvestedCapital()
-                        * (1 - plan.getPlant().getOwner().getDebtRatioOfInvestments());
-                double investmentCostPayedByDebt = plan.getPlant().getActualInvestedCapital()
-                        * plan.getPlant().getOwner().getDebtRatioOfInvestments();
-                double downPayment = investmentCostPayedByEquity;
-                createSpreadOutDownPayments(plan.getPlant().getOwner(), manufacturer, downPayment, plan.getPlant());
-
-                double amount = determineLoanAnnuities(investmentCostPayedByDebt, plan.getPlant().getTechnology()
-                        .getDepreciationTime(), plan.getPlant().getOwner().getLoanInterestRate());
-
-                // logger.warn("Loan amount is: " + amount);
-                Loan loan = reps.loanRepository.createLoan(plan.getBidder(), bigbank, amount, plan.getPlant()
-                        .getTechnology().getDepreciationTime(), getCurrentTick(), plan.getPlant());
-
-                // Create the loan
-                plan.getPlant().createOrUpdateLoan(loan);
-                plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
-                plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractLengthinYears());
-                plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);
-                plan.getPlant().setHasLongtermCapacityMarketContract(true);
-                plan.getPlant().persist();
-            }
-            if (currentLifeTime < 0) {
-                plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
-                plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractLengthinYears());
-                plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);
-                plan.getPlant().setHasLongtermCapacityMarketContract(true);
-                plan.getPlant().persist();
-            }
-        }
         // Delete all unbuilt power plants that do not clear.
+
         ElectricitySpotMarket eMarket = reps.marketRepository.findElectricitySpotMarketForZone(market.getZone());
+        // for (PowerPlant plant :
+        // reps.powerPlantRepository.findPowerPlantsInMarket(eMarket)) {
+        // logger.warn("1 temp " +
+        // plant.isTemporaryPlantforCapacityMarketBid());
+        // // logger.warn("1 LTC " +
+        // // plant.isHasLongtermCapacityMarketContract());
+        // }
+
         for (PowerPlant plant : reps.powerPlantRepository.findPowerPlantsInMarket(eMarket)) {
             if (plant.isTemporaryPlantforCapacityMarketBid() == true) {
                 plant.dismantlePowerPlant(getCurrentTick());
             }
         }
+
         // clearingPoint.persist();
         // logger.warn("is the market cleared? " + isTheMarketCleared);
         // logger.warn("Clearing point Price" + clearingPoint.getPrice());
@@ -260,6 +231,55 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
         Loan downpayment = reps.loanRepository.createLoan(agent, manufacturer, totalDownPayment / buildingTime,
                 buildingTime - 1, getCurrentTick(), plant);
         plant.createOrUpdateDownPayment(downpayment);
+    }
+
+    @Transactional
+    void updatePlantsClearedForLongTermCapacityContract(CapacityMarket market, CapacityClearingPoint clearingPoint,
+            Regulator regulator) {
+
+        for (CapacityDispatchPlan plan : reps.capacityMarketRepository.findAllAcceptedCapacityDispatchPlansForTime(
+                market, getCurrentTick())) {
+            long currentLifeTime = getCurrentTick() - plan.getPlant().getConstructionStartTime()
+                    - plan.getPlant().getTechnology().getExpectedLeadtime()
+                    - plan.getPlant().getTechnology().getExpectedPermittime();
+
+            if (plan.getPlant().isTemporaryPlantforCapacityMarketBid() == true) {
+
+                PowerPlantManufacturer manufacturer = reps.genericRepository.findFirst(PowerPlantManufacturer.class);
+
+                BigBank bigbank = reps.genericRepository.findFirst(BigBank.class);
+
+                double investmentCostPayedByEquity = plan.getPlant().getActualInvestedCapital()
+                        * (1 - plan.getPlant().getOwner().getDebtRatioOfInvestments());
+                double investmentCostPayedByDebt = plan.getPlant().getActualInvestedCapital()
+                        * plan.getPlant().getOwner().getDebtRatioOfInvestments();
+                double downPayment = investmentCostPayedByEquity;
+                createSpreadOutDownPayments(plan.getPlant().getOwner(), manufacturer, downPayment, plan.getPlant());
+
+                double amount = determineLoanAnnuities(investmentCostPayedByDebt, plan.getPlant().getTechnology()
+                        .getDepreciationTime(), plan.getPlant().getOwner().getLoanInterestRate());
+
+                // logger.warn("Loan amount is: " + amount);
+                Loan loan = reps.loanRepository.createLoan(plan.getBidder(), bigbank, amount, plan.getPlant()
+                        .getTechnology().getDepreciationTime(), getCurrentTick(), plan.getPlant());
+
+                // Create the loan
+                plan.getPlant().createOrUpdateLoan(loan);
+                plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
+                plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractLengthinYears());
+                plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);
+                plan.getPlant().setHasLongtermCapacityMarketContract(true);
+                plan.getPlant().persist();
+
+            }
+            if (currentLifeTime < 0) {
+                plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
+                plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractLengthinYears());
+                plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);
+                plan.getPlant().setHasLongtermCapacityMarketContract(true);
+                plan.getPlant().persist();
+            }
+        }
     }
 
 }

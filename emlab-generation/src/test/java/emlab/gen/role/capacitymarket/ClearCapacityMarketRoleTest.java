@@ -23,10 +23,15 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
+import emlab.gen.domain.agent.EnergyProducer;
 import emlab.gen.domain.agent.Regulator;
+import emlab.gen.domain.contract.Loan;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
+import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
+import emlab.gen.domain.technology.PowerGeneratingTechnology;
+import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.CapacityMarketRepository;
 import emlab.gen.repository.Reps;
 
@@ -53,27 +58,57 @@ public class ClearCapacityMarketRoleTest {
     @Test
     public void ClearCapacityMarketBasicFunctionality() {
 
-        CapacityMarket market = new CapacityMarket();
-        market.persist();
-
         Zone zone = new Zone();
         zone.persist();
+
+        CapacityMarket market = new CapacityMarket();
+        market.setZone(zone);
+        market.persist();
 
         Regulator regulator = new Regulator();
 
         regulator.setDemandTarget(100);
         regulator.setCapacityMarketPriceCap(10);
+        regulator.setLongTermCapacityContractLengthinYears(15);
         // regulator.setReserveMargin(0.156);
         regulator.setReserveDemandLowerMargin(0.15);
         regulator.setReserveDemandUpperMargin(0.05);
         regulator.setZone(zone);
         regulator.persist();
 
+        ElectricitySpotMarket market1 = new ElectricitySpotMarket();
+        market1.setName("Market1");
+        market1.setZone(zone);
+        market1.persist();
+
+        PowerGeneratingTechnology coal1 = new PowerGeneratingTechnology();
+        coal1.persist();
+
+        EnergyProducer e1 = new EnergyProducer();
+        e1.setName("E1");
+        e1.setCash(0);
+        e1.setPriceMarkUp(1);
+        e1.persist();
+
+        Loan l1 = new Loan();
+        l1.setAmountPerPayment(6000);
+        l1.setNumberOfPaymentsDone(10);
+        l1.setTotalNumberOfPayments(15);
+        l1.persist();
+
+        PowerPlant pp1 = new PowerPlant();
+        pp1.setTechnology(coal1);
+        pp1.setOwner(e1);
+        pp1.setActualFixedOperatingCost(99000);
+        pp1.setLoan(l1);
+        pp1.persist();
+
         CapacityDispatchPlan cdp1 = new CapacityDispatchPlan();
         cdp1.setAmount(8);
         cdp1.setPrice(0);
         cdp1.setTime(0l);
         cdp1.setStatus(1);
+        cdp1.setPlant(pp1);
         cdp1.persist();
 
         CapacityDispatchPlan cdp2 = new CapacityDispatchPlan();
@@ -81,6 +116,7 @@ public class ClearCapacityMarketRoleTest {
         cdp2.setPrice(0);
         cdp2.setTime(0l);
         cdp2.setStatus(1);
+        cdp2.setPlant(pp1);
         cdp2.persist();
 
         CapacityDispatchPlan cdp3 = new CapacityDispatchPlan();
@@ -88,6 +124,7 @@ public class ClearCapacityMarketRoleTest {
         cdp3.setPrice(1);
         cdp3.setTime(0l);
         cdp3.setStatus(1);
+        cdp3.setPlant(pp1);
         cdp3.persist();
 
         CapacityDispatchPlan cdp4 = new CapacityDispatchPlan();
@@ -95,6 +132,7 @@ public class ClearCapacityMarketRoleTest {
         cdp4.setPrice(20);
         cdp4.setTime(0l);
         cdp4.setStatus(1);
+        cdp4.setPlant(pp1);
         cdp4.persist();
 
         clearCapacityMarketRoleTest.act(regulator);

@@ -61,7 +61,7 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
          */
         double longtermContractedCapacity = 0;
         for (PowerPlant plant : reps.powerPlantRepository.findPowerPlantsInMarket(market)) {
-            if (plant.hasLongtermCapacityMarketContract == true) {
+            if (plant.isHasLongtermCapacityMarketContract() == true) {
                 double capacity = plant.getTechnology().getCapacity()
                         * plant.getTechnology().getPeakSegmentDependentAvailability();
 

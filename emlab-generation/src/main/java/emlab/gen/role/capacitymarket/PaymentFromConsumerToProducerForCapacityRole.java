@@ -50,7 +50,7 @@ public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarket
         // for UK market pay only units that have a annual contract first
         for (CapacityDispatchPlan plan : reps.capacityMarketRepository.findAllAcceptedCapacityDispatchPlansForTime(
                 capacityMarket, getCurrentTick())) {
-            if (plan.getPlant().hasLongtermCapacityMarketContract == false) {
+            if (plan.getPlant().isHasLongtermCapacityMarketContract() == false) {
 
                 // logger.warn("Hi");
                 // logger.warn("cdp for plant" + plan.getPlant());
@@ -79,7 +79,7 @@ public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarket
         // if contract period is complete change long term contract status to
         // false
         for (PowerPlant plant : reps.powerPlantRepository.findAll()) {
-            if (plant.hasLongtermCapacityMarketContract == true) {
+            if (plant.isHasLongtermCapacityMarketContract() == true) {
                 reps.nonTransactionalCreateRepository.createCashFlow(plant.getOwner().getInvestorMarket(),
                         plant.getOwner(), plant.getActualNominalCapacity() * plant.getLongtermcapacitycontractPrice(),
                         CashFlow.SIMPLE_CAPACITY_MARKET, getCurrentTick(), plant);
