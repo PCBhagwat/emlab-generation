@@ -79,7 +79,11 @@ public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarket
         // if contract period is complete change long term contract status to
         // false
         for (PowerPlant plant : reps.powerPlantRepository.findAll()) {
+            // logger.warn("3 loop Entered " +
+            // plant.isHasLongtermCapacityMarketContract());
             if (plant.isHasLongtermCapacityMarketContract() == true) {
+                // logger.warn("4 loop Entered " +
+                // plant.isHasLongtermCapacityMarketContract());
                 reps.nonTransactionalCreateRepository.createCashFlow(plant.getOwner().getInvestorMarket(),
                         plant.getOwner(), plant.getActualNominalCapacity() * plant.getLongtermcapacitycontractPrice(),
                         CashFlow.SIMPLE_CAPACITY_MARKET, getCurrentTick(), plant);

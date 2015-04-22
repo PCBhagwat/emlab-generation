@@ -64,8 +64,8 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
             long currentLifeTime = getCurrentTick() - plant.getConstructionStartTime()
                     - plant.getTechnology().getExpectedLeadtime() - plant.getTechnology().getExpectedPermittime();
 
-            if (plant.isTemporaryPlantforCapacityMarketBid() != true
-                    && plant.isHasLongtermCapacityMarketContract() != true && currentLifeTime > -4) {
+            if (plant.isTemporaryPlantforCapacityMarketBid() == false
+                    && plant.isHasLongtermCapacityMarketContract() == false && currentLifeTime > -4) {
 
                 // logger.warn("Bid calculation for PowerPlant " +
                 // plant.isTemporaryPlantforCapacityMarketBid());
@@ -183,15 +183,14 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                     CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
                     plan.specifyAndPersist(plant, producer, market, getCurrentTick(), bidPrice, capacity, Bid.SUBMITTED);
 
-                    // logger.warn("CDP for powerplant " +
-                    // plan.getPlant().getName());
-                    // logger.warn("CDP price is " + plan.getPrice());
-                    // logger.warn("CDP amount is " + plan.getAmount());
+                    logger.warn("CDP for powerplant " + plan.getPlant().getName());
+                    logger.warn("CDP price is " + plan.getPrice());
+                    logger.warn("CDP amount is " + plan.getAmount());
 
                 }
             }
             if (plant.isTemporaryPlantforCapacityMarketBid() == true) {
-
+                logger.warn("enters loop " + plant.isTemporaryPlantforCapacityMarketBid());
                 double capacity = plant.getTechnology().getCapacity()
                         * plant.getTechnology().getPeakSegmentDependentAvailability();
                 CapacityMarket market = reps.capacityMarketRepository.findCapacityMarketForZone(plant.getLocation()
@@ -200,6 +199,7 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                 CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
                 plan.specifyAndPersist(plant, producer, market, getCurrentTick(), plant.getCapacityMarketBidPrice(),
                         capacity, Bid.SUBMITTED);
+                logger.warn("enters loop " + plan.getPrice());
 
             }
         }

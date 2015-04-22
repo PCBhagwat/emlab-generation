@@ -404,12 +404,13 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                             && technology.getNetPresentValue() < 0
                             && technology.getNetPresentValue() + capacityMarketCap >= 0) {
                         logger.warn("1 NPV Tech " + technology.getNetPresentValue());
+                        //
+
                         PowerPlant plant = new PowerPlant();
                         plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), technology,
                                 true);
-                        plant.setCapacityMarketBidPrice((technology.getNetPresentValue()) * (-1));
+                        updateCapacityMarketBidPrice(plant, ((technology.getNetPresentValue()) * (-1)));
                         plant.persist();
-
                     }
 
                 }
@@ -446,6 +447,11 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
     @Transactional
     private void setNetPresentValue(PowerGeneratingTechnology technology, double NPV) {
         technology.setNetPresentValue(NPV);
+    }
+
+    @Transactional
+    private void updateCapacityMarketBidPrice(PowerPlant plant, double price) {
+        plant.setCapacityMarketBidPrice(price);
     }
 
     /**

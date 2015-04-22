@@ -77,7 +77,9 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
         }
 
         for (CapacityDispatchPlan currentCDP : sortedListofCDP) {
-
+            // logger.warn("Plant type" +
+            // currentCDP.getPlant().isTemporaryPlantforCapacityMarketBid()
+            // + " dispatch Price " + currentCDP.getPrice());
             if (currentCDP.getPrice() <= regulator.getCapacityMarketPriceCap()) {
 
                 demand = regulator.getDemandTarget()
@@ -234,17 +236,16 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
     }
 
     @Transactional
-    void updatePlantsClearedForLongTermCapacityContract(CapacityMarket market, CapacityClearingPoint clearingPoint,
-            Regulator regulator) {
-
+    private void updatePlantsClearedForLongTermCapacityContract(CapacityMarket market,
+            CapacityClearingPoint clearingPoint, Regulator regulator) {
         for (CapacityDispatchPlan plan : reps.capacityMarketRepository.findAllAcceptedCapacityDispatchPlansForTime(
                 market, getCurrentTick())) {
+            // logger.warn("1a Loop 2 " + plan.getPlant());
             long currentLifeTime = getCurrentTick() - plan.getPlant().getConstructionStartTime()
                     - plan.getPlant().getTechnology().getExpectedLeadtime()
                     - plan.getPlant().getTechnology().getExpectedPermittime();
 
             if (plan.getPlant().isTemporaryPlantforCapacityMarketBid() == true) {
-
                 PowerPlantManufacturer manufacturer = reps.genericRepository.findFirst(PowerPlantManufacturer.class);
 
                 BigBank bigbank = reps.genericRepository.findFirst(BigBank.class);
@@ -272,7 +273,7 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                 plan.getPlant().persist();
 
             }
-            if (currentLifeTime < 0) {
+            if (currentLifeTime < 0 && plan.getPlant().isHasLongtermCapacityMarketContract() != true) {
                 plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
                 plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractLengthinYears());
                 plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);
