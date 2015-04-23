@@ -79,18 +79,14 @@ public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarket
         // if contract period is complete change long term contract status to
         // false
         for (PowerPlant plant : reps.powerPlantRepository.findAll()) {
-            // logger.warn("3 loop Entered " +
-            // plant.isHasLongtermCapacityMarketContract());
             if (plant.isHasLongtermCapacityMarketContract() == true) {
-                // logger.warn("4 loop Entered " +
-                // plant.isHasLongtermCapacityMarketContract());
                 reps.nonTransactionalCreateRepository.createCashFlow(plant.getOwner().getInvestorMarket(),
                         plant.getOwner(), plant.getActualNominalCapacity() * plant.getLongtermcapacitycontractPrice(),
                         CashFlow.SIMPLE_CAPACITY_MARKET, getCurrentTick(), plant);
                 double capacityPeriod = plant.getCapacityContractPeriod() - 1;
-                plant.setCapacityContractPeriod(capacityPeriod);
+                updateLongtermCapacityContractPeriod(plant, capacityPeriod);
                 if (plant.getCapacityContractPeriod() <= 0) {
-                    plant.setHasLongtermCapacityMarketContract(false);
+                    updateLongtermContractStatus(plant, false);
                 }
             }
         }
@@ -106,6 +102,16 @@ public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarket
 
         return reps;
 
+    }
+
+    @Transactional
+    private void updateLongtermCapacityContractPeriod(PowerPlant plant, double period) {
+        plant.setCapacityContractPeriod(period);
+    }
+
+    @Transactional
+    private void updateLongtermContractStatus(PowerPlant plant, boolean status) {
+        plant.setHasLongtermCapacityMarketContract(status);
     }
 
 }

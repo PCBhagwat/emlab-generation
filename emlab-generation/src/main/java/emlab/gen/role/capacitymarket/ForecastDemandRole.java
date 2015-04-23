@@ -69,7 +69,6 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
 
             }
         }
-
         double expectedDemandFactor = 0d;
         if (getCurrentTick() < 2) {
 
@@ -93,6 +92,9 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
 
         // Compute demand target by multiplying reserve margin double double
         double demandTarget = (peakExpectedDemand * (1 + regulator.getReserveMargin())) - longtermContractedCapacity;
+        // logger.warn("substract " + longtermContractedCapacity + " underated "
+        // + ((peakExpectedDemand * (1 + regulator.getReserveMargin())) +
+        // " derated " + demandTarget));
 
         regulator.setDemandTarget(demandTarget);
 

@@ -329,6 +329,11 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
 
                     double projectValue = discountedOpProfit + discountedCapitalCosts;
                     // logger.warn("Project value" + projectValue);
+                    double capacityBid = 0;
+                    if (projectValue < 0) {
+                        capacityBid = calcualteCapacityMarketBidValue(projectValue,
+                                regulator.getLongTermCapacityContractLengthinYears(), wacc);
+                    }
 
                     // logger.warn(
                     // "Agent {}  found the project value for technology {} to be "
@@ -351,7 +356,7 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                     // Store NPV in the PowerplantTechnology
                     // technology.setNetPresentValue(projectValue /
                     // plant.getActualNominalCapacity());
-                    setNetPresentValue(technology, (projectValue / plant.getActualNominalCapacity()));
+                    setNetPresentValue(technology, (capacityBid / plant.getActualNominalCapacity()));
 
                     if (projectValue > 0 && projectValue / plant.getActualNominalCapacity() > highestValue) {
                         highestValue = projectValue / plant.getActualNominalCapacity();
@@ -401,15 +406,16 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                         .findAll(PowerGeneratingTechnology.class)) {
 
                     if (technology.getExpectedLeadtime() + technology.getExpectedPermittime() <= 4
-                            && technology.getNetPresentValue() < 0
-                            && technology.getNetPresentValue() + capacityMarketCap >= 0) {
-                        logger.warn("1 NPV Tech " + technology.getNetPresentValue());
-                        //
+                            && technology.getNetPresentValue() > 0
+                            && technology.getNetPresentValue() <= capacityMarketCap) {
+
+                        // logger.warn("1 NPV Tech " +
+                        // technology.getNetPresentValue());
 
                         PowerPlant plant = new PowerPlant();
                         plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), technology,
                                 true);
-                        updateCapacityMarketBidPrice(plant, ((technology.getNetPresentValue()) * (-1)));
+                        updateCapacityMarketBidPrice(plant, technology.getNetPresentValue());
                         plant.persist();
                     }
 
@@ -512,6 +518,16 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
             npv += netCashFlow.get(iterator).doubleValue() / Math.pow(1 + wacc, iterator.intValue());
         }
         return npv;
+    }
+
+    private double calcualteCapacityMarketBidValue(double projectValue, double contractLength, double wacc) {
+        double sum = 0;
+        double capacitybid = 0;
+        for (Integer i = 1; i <= (int) contractLength; i++) {
+            sum = sum + (Math.pow((1 + wacc), (-i)));
+        }
+        capacitybid = ((-projectValue) / sum);
+        return capacitybid;
     }
 
     public double determineExpectedMarginalCost(PowerPlant plant, Map<Substance, Double> expectedFuelPrices,
