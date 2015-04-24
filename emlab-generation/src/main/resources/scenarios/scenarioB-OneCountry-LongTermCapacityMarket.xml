@@ -36,7 +36,7 @@
 		p:name="Regulator A" p:capacityMarketPriceCap="${capacityMarketPriceCap}"
 		p:reserveMargin="${reserveMargin}" p:targetPeriod="0"
 		p:reserveDemandLowerMargin="${reserveDemandLowerMargin}" p:reserveDemandUpperMargin="${reserveDemandUpperMargin}"
-		p:numberOfYearsLookingBackToForecastDemand="4" p:longTermCapacityContractLengthinYears="15"> 
+		p:numberOfYearsLookingBackToForecastDemand="4" p:longTermCapacityContractLengthinYears="15" p:capacityMarketPermittedTimeForConstruction="4"> 
 		<property name="zone" ref="nl" />
 		</bean>
 

@@ -45,6 +45,9 @@ public class Regulator extends DecarbonizationAgent implements Agent {
     @SimulationParameter(label = "Reserve Demand Upper Margin", from = 0, to = 1)
     private double reserveDemandUpperMargin;
 
+    @SimulationParameter(label = "Permitted Time for Construction", from = 0, to = 100)
+    private long capacityMarketPermittedTimeForConstruction;
+
     private double demandTarget;
 
     @SimulationParameter(label = "Capacity Market Target Period", from = 0, to = 10)
@@ -55,6 +58,14 @@ public class Regulator extends DecarbonizationAgent implements Agent {
 
     @RelatedTo(type = "OF_ZONE", elementClass = Zone.class, direction = Direction.OUTGOING)
     private Zone zone;
+
+    public long getCapacityMarketPermittedTimeForConstruction() {
+        return capacityMarketPermittedTimeForConstruction;
+    }
+
+    public void setCapacityMarketPermittedTimeForConstruction(long capacityMarketPermittedTimeForConstruction) {
+        this.capacityMarketPermittedTimeForConstruction = capacityMarketPermittedTimeForConstruction;
+    }
 
     public double getDemandTarget() {
         return demandTarget;

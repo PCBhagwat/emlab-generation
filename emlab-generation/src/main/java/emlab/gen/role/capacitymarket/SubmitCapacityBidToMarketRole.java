@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import agentspring.role.Role;
 import agentspring.role.RoleComponent;
 import emlab.gen.domain.agent.EnergyProducer;
+import emlab.gen.domain.agent.Regulator;
 import emlab.gen.domain.market.Bid;
 import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
@@ -57,15 +58,31 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
 
         // For UK market create bids for under construction plants within 4
         // years of construction and not contracted
-
+        Regulator regulator = reps.regulatorRepository.findRegulatorForZone(producer.getInvestorMarket().getZone());
         for (PowerPlant plant : reps.powerPlantRepository.findPowerPlantsByOwner(producer)) {
             // Create PPDPs only for existing and under construction plants UK
             // Market
+
             long currentLifeTime = getCurrentTick() - plant.getConstructionStartTime()
                     - plant.getTechnology().getExpectedLeadtime() - plant.getTechnology().getExpectedPermittime();
 
             if (plant.isTemporaryPlantforCapacityMarketBid() == false
-                    && plant.isHasLongtermCapacityMarketContract() == false && currentLifeTime > -4) {
+                    && plant.isHasLongtermCapacityMarketContract() == false
+                    && currentLifeTime > (regulator.getCapacityMarketPermittedTimeForConstruction() * (-1))
+                    && currentLifeTime <= 0) {
+
+                double capacity = plant.getTechnology().getCapacity()
+                        * plant.getTechnology().getPeakSegmentDependentAvailability();
+                CapacityMarket market = reps.capacityMarketRepository.findCapacityMarketForZone(plant.getLocation()
+                        .getZone());
+
+                CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
+                plan.specifyAndPersist(plant, producer, market, getCurrentTick(), 0, capacity, Bid.SUBMITTED);
+
+            }
+
+            if (plant.isTemporaryPlantforCapacityMarketBid() == false
+                    && plant.isHasLongtermCapacityMarketContract() == false && currentLifeTime > 0) {
 
                 // logger.warn("Bid calculation for PowerPlant " +
                 // plant.isTemporaryPlantforCapacityMarketBid());
@@ -161,7 +178,7 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                     }
 
                     double electricityMarketRevenuePerMW = electricityMarketRevenue
-                            / plant.getAvailableCapacity(getCurrentTick());
+                            / plant.getTechnology().getCapacity();
                     // logger.warn("FINAL EL Market revenue is " +
                     // electricityMarketRevenue);
                     // logger.warn("EL Market revenue per MW is " +
@@ -178,7 +195,8 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                     }
 
                     Segment peakSegment = reps.segmentRepository.findPeakSegmentforMarket(eMarket);
-                    double capacity = plant.getAvailableCapacity(getCurrentTick(), peakSegment, numberOfSegments);
+                    double capacity = plant.getTechnology().getCapacity()
+                            * plant.getTechnology().getPeakSegmentDependentAvailability();
 
                     CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
                     plan.specifyAndPersist(plant, producer, market, getCurrentTick(), bidPrice, capacity, Bid.SUBMITTED);
