@@ -331,7 +331,9 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                     // logger.warn("Project value" + projectValue);
                     double capacityBid = 0;
                     if (projectValue < 0) {
-                        capacityBid = calcualteCapacityMarketBidValue(projectValue,
+                        capacityBid = calcualteCapacityMarketBidValue(
+                                (projectValue - updateCapacityBidtoAccountCapacityMarketRevenues(capacityRevenue,
+                                        technology.getDepreciationTime(), (int) plant.getActualLeadtime(), wacc)),
                                 regulator.getLongTermCapacityContractLengthinYears(), wacc);
                     }
 
@@ -528,6 +530,17 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
         }
         capacitybid = ((-projectValue) / sum);
         return capacitybid;
+    }
+
+    private double updateCapacityBidtoAccountCapacityMarketRevenues(double capacityRevenue, int depreciationTime,
+            int buildingTime, double wacc) {
+        double sum = 0;
+        double deratedCapacityRevenue = 0;
+        for (int i = buildingTime; i < depreciationTime + buildingTime; i++) {
+            sum = sum + (Math.pow((1 + wacc), (-i)));
+        }
+        deratedCapacityRevenue = (capacityRevenue / sum);
+        return deratedCapacityRevenue;
     }
 
     public double determineExpectedMarginalCost(PowerPlant plant, Map<Substance, Double> expectedFuelPrices,
