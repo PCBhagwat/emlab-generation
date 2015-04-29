@@ -278,7 +278,8 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                 plan.getPlant().persist();
 
             }
-            if (currentLifeTime <= 0 && plan.getPlant().isHasLongtermCapacityMarketContract() != true) {
+            if (currentLifeTime <= 0 && plan.getPlant().isHasLongtermCapacityMarketContract() != true
+                    && plan.getPlant().isTemporaryPlantforCapacityMarketBid() != true) {
                 plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
                 plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractLengthinYears());
                 plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);

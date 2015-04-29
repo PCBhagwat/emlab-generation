@@ -91,7 +91,7 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
         double peakExpectedDemand = peakLoadforMarketNOtrend * expectedDemandFactor;
 
         // Compute demand target by multiplying reserve margin double double
-        double demandTarget = (peakExpectedDemand * (1 + regulator.getReserveMargin())) - longtermContractedCapacity;
+        double demandTarget = ((peakExpectedDemand - longtermContractedCapacity) * (1 + regulator.getReserveMargin()));
         // logger.warn("substract " + longtermContractedCapacity + " underated "
         // + ((peakExpectedDemand * (1 + regulator.getReserveMargin())) +
         // " derated " + demandTarget));

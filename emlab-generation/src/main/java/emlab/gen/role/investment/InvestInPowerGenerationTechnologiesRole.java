@@ -283,7 +283,6 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                         // null, numberOfSegments));
                         capacityRevenue = plant.getExpectedAvailableCapacity(futureTimePoint, peakSegment,
                                 numberOfSegments) * sumCapacityRevenue / (getCurrentTick() - time);
-
                     } else {
                         capacityRevenue = 0;
                     }
@@ -397,8 +396,9 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
 
             // Create CapacityDispatchPlan for all power plant technologies with
             // NPV + CONE is greater than equal to 0
-            if (reps.capacityMarketRepository.findCapacityMarketForZone(market.getZone()) != null) {
 
+            Regulator reg = reps.regulatorRepository.findRegulatorForZone(market.getZone());
+            if ((agent.isSimpleCapacityMarketEnabled()) && (reg != null)) {
                 CapacityMarket capacityMarket = reps.capacityMarketRepository.findCapacityMarketForZone(market
                         .getZone());
 
