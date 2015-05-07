@@ -37,6 +37,7 @@ import emlab.gen.domain.agent.DecarbonizationModel;
 import emlab.gen.domain.agent.EnergyProducer;
 import emlab.gen.domain.agent.Government;
 import emlab.gen.domain.agent.PowerPlantManufacturer;
+import emlab.gen.domain.agent.Regulator;
 import emlab.gen.domain.agent.StochasticTargetInvestor;
 import emlab.gen.domain.agent.StrategicReserveOperator;
 import emlab.gen.domain.agent.TargetInvestor;
@@ -45,6 +46,7 @@ import emlab.gen.domain.contract.Loan;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.CO2Auction;
 import emlab.gen.domain.market.ClearingPoint;
+import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.domain.market.electricity.Segment;
 import emlab.gen.domain.market.electricity.SegmentLoad;
@@ -303,6 +305,42 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
 
                         double operatingProfit = expectedGrossProfit - fixedOMCost;
 
+                        Segment peakSegment = reps.segmentRepository.findPeakSegmentforMarket(market);
+
+                        Zone zoneTemp = market.getZone();
+                        Regulator regulator = reps.regulatorRepository.findRegulatorForZone(zoneTemp);
+                        CapacityMarket cMarket = reps.capacityMarketRepository.findCapacityMarketForZone(zoneTemp);
+
+                        double capacityRevenue = 0d;
+                        double sumCapacityRevenue = 0d;
+                        if ((agent.isSimpleCapacityMarketEnabled()) && (regulator != null)) {
+                            // Use previous year as starting point for long term
+                            // capacity market
+                            long time = 0l;
+                            for (time = getCurrentTick() - 1; time > getCurrentTick()
+                                    - agent.getNumberOfYearsBacklookingForForecasting()
+                                    && time > 0; time = time - 1) {
+                                double capacityRevenueTemp = reps.capacityMarketRepository
+                                        .findOneClearingPointForTimeAndCapacityMarket(time, cMarket).getPrice();
+                                sumCapacityRevenue += capacityRevenueTemp;
+                            }
+                            // logger.warn(" And capacity (peak segment) is"
+                            // +
+                            // plant.getExpectedAvailableCapacity(futureTimePoint,
+                            // peakSegment, numberOfSegments));
+                            // logger.warn(" And capacity (null) is"
+                            // +
+                            // plant.getExpectedAvailableCapacity(futureTimePoint,
+                            // null, numberOfSegments));
+                            capacityRevenue = plant.getExpectedAvailableCapacity(futureTimePoint, peakSegment,
+                                    numberOfSegments) * sumCapacityRevenue / (getCurrentTick() - time);
+                        } else {
+                            capacityRevenue = 0;
+                        }
+                        // logger.warn("Capacity Revenue" + capacityRevenue);
+
+                        operatingProfit = operatingProfit + capacityRevenue;
+
                         // TODO Alter discount rate on the basis of the amount
                         // in long-term contracts?
                         // TODO Alter discount rate on the basis of other stuff,
@@ -339,6 +377,14 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
                         // agent, technology);
 
                         double projectValue = discountedOpProfit + discountedCapitalCosts;
+                        // logger.warn("Project value" + projectValue);
+                        double capacityBid = 0;
+                        if (projectValue < 0) {
+                            capacityBid = calcualteCapacityMarketBidValue(
+                                    (projectValue - updateCapacityBidtoAccountCapacityMarketRevenues(capacityRevenue,
+                                            technology.getDepreciationTime(), (int) plant.getActualLeadtime(), wacc)),
+                                    regulator.getLongTermCapacityContractLengthinYears(), wacc);
+                        }
 
                         // if (technology.isIntermittent()) {
                         // logger.warn(technology + "in " + node.getName() +
@@ -363,6 +409,11 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
                          * Divide by capacity, in order not to favour large
                          * power plants (which have the single largest NPV
                          */
+
+                        // Store NPV in the PowerplantTechnology
+                        // technology.setNetPresentValue(projectValue /
+                        // plant.getActualNominalCapacity());
+                        setNetPresentValue(technology, (capacityBid / plant.getActualNominalCapacity()));
 
                         if (projectValue > 0 && projectValue / plant.getActualNominalCapacity() > highestValue) {
                             highestValue = projectValue / plant.getActualNominalCapacity();
@@ -400,6 +451,37 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
             plant.createOrUpdateLoan(loan);
 
         } else {
+
+            // Create CapacityDispatchPlan for all power plant technologies with
+            // NPV + CONE is greater than equal to 0
+
+            Regulator reg = reps.regulatorRepository.findRegulatorForZone(market.getZone());
+            if ((agent.isSimpleCapacityMarketEnabled()) && (reg != null)) {
+                CapacityMarket capacityMarket = reps.capacityMarketRepository.findCapacityMarketForZone(market
+                        .getZone());
+
+                double capacityMarketCap = capacityMarket.getRegulator().getCapacityMarketPriceCap();
+
+                for (PowerGeneratingTechnology technology : reps.genericRepository
+                        .findAll(PowerGeneratingTechnology.class)) {
+
+                    if (technology.getExpectedLeadtime() + technology.getExpectedPermittime() <= 4
+                            && technology.getNetPresentValue() > 0
+                            && technology.getNetPresentValue() <= capacityMarketCap) {
+
+                        // logger.warn("1 NPV Tech " +
+                        // technology.getNetPresentValue());
+
+                        PowerPlant plant = new PowerPlant();
+                        plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), technology,
+                                true);
+                        updateCapacityMarketBidPrice(plant, technology.getNetPresentValue());
+                        plant.persist();
+                    }
+
+                }
+            }
+
             // logger.warn("{} found no suitable technology anymore to invest in at tick "
             // + getCurrentTick(), agent);
             // agent will not participate in the next round of investment if
@@ -426,6 +508,16 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
     @Transactional
     private void setNotWillingToInvest(EnergyProducer agent) {
         agent.setWillingToInvest(false);
+    }
+
+    @Transactional
+    private void setNetPresentValue(PowerGeneratingTechnology technology, double NPV) {
+        technology.setNetPresentValue(NPV);
+    }
+
+    @Transactional
+    private void updateCapacityMarketBidPrice(PowerPlant plant, double price) {
+        plant.setCapacityMarketBidPrice(price);
     }
 
     /**
@@ -487,6 +579,27 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
             npv += netCashFlow.get(iterator).doubleValue() / Math.pow(1 + wacc, iterator.intValue());
         }
         return npv;
+    }
+
+    private double calcualteCapacityMarketBidValue(double projectValue, double contractLength, double wacc) {
+        double sum = 0;
+        double capacitybid = 0;
+        for (Integer i = 1; i <= (int) contractLength; i++) {
+            sum = sum + (Math.pow((1 + wacc), (-i)));
+        }
+        capacitybid = ((-projectValue) / sum);
+        return capacitybid;
+    }
+
+    private double updateCapacityBidtoAccountCapacityMarketRevenues(double capacityRevenue, int depreciationTime,
+            int buildingTime, double wacc) {
+        double sum = 0;
+        double deratedCapacityRevenue = 0;
+        for (int i = buildingTime; i < depreciationTime + buildingTime; i++) {
+            sum = sum + (Math.pow((1 + wacc), (-i)));
+        }
+        deratedCapacityRevenue = (capacityRevenue / sum);
+        return deratedCapacityRevenue;
     }
 
     public double determineExpectedMarginalCost(PowerPlant plant, Map<Substance, Double> expectedFuelPrices,
