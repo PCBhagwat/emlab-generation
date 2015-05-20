@@ -329,7 +329,7 @@ public class InvestInPowerGenerationTechnologiesRole<T extends EnergyProducer> e
                     double projectValue = discountedOpProfit + discountedCapitalCosts;
                     // logger.warn("Project value" + projectValue);
                     double capacityBid = 0;
-                    if (projectValue < 0) {
+                    if (projectValue < 0 && agent.isSimpleCapacityMarketEnabled() && (regulator != null)) {
                         capacityBid = calcualteCapacityMarketBidValue(
                                 (projectValue - updateCapacityBidtoAccountCapacityMarketRevenues(capacityRevenue,
                                         technology.getDepreciationTime(), (int) plant.getActualLeadtime(), wacc)),

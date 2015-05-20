@@ -27,6 +27,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import emlab.gen.domain.agent.EnergyProducer;
+import emlab.gen.domain.agent.Regulator;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
@@ -108,6 +109,11 @@ public class SubmitCapacityBidToMarketRoleTest {
         Zone zone = new Zone();
         zone.persist();
 
+        Regulator regulator = new Regulator();
+        regulator.setZone(zone);
+        regulator.setCapacityMarketPermittedTimeForConstruction(5);
+        regulator.persist();
+
         PowerGridNode location = new PowerGridNode();
         location.setZone(zone);
         location.persist();
@@ -136,12 +142,20 @@ public class SubmitCapacityBidToMarketRoleTest {
 
         PowerGeneratingTechnology coal1 = new PowerGeneratingTechnology();
         coal1.setFixedOperatingCostTimeSeries(coalFixedOperatingCostTimeSeries);
+        coal1.setExpectedLeadtime(4);
+        coal1.setExpectedPermittime(1);
         PowerGeneratingTechnology coal2 = new PowerGeneratingTechnology();
         coal2.setFixedOperatingCostTimeSeries(coalFixedOperatingCostTimeSeries);
+        coal2.setExpectedLeadtime(4);
+        coal2.setExpectedPermittime(1);
         PowerGeneratingTechnology gas1 = new PowerGeneratingTechnology();
         gas1.setFixedOperatingCostTimeSeries(gasFixedOperatingCostTimeSeries);
+        gas1.setExpectedLeadtime(2);
+        gas1.setExpectedPermittime(1);
         PowerGeneratingTechnology gas2 = new PowerGeneratingTechnology();
         gas2.setFixedOperatingCostTimeSeries(gasFixedOperatingCostTimeSeries);
+        gas2.setExpectedLeadtime(2);
+        gas2.setExpectedPermittime(1);
 
         coal1.persist();
         coal2.persist();
@@ -152,11 +166,13 @@ public class SubmitCapacityBidToMarketRoleTest {
         e1.setName("E1");
         e1.setCash(0);
         e1.setPriceMarkUp(1);
+        e1.setInvestorMarket(market);
 
         EnergyProducer e2 = new EnergyProducer();
         e2.setCash(0);
         e2.setPriceMarkUp(1);
         e2.setName("E2");
+        e2.setInvestorMarket(market);
 
         e1.persist();
         e2.persist();
