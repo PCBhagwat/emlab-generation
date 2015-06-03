@@ -103,7 +103,7 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                     double bidPrice = 0d;
 
                     // get FixedOMCost
-                    double fixedOnMCost = plant.getActualFixedOperatingCost();
+                    double fixedOnMCost = plant.getActualFixedOperatingCost() / plant.getActualNominalCapacity();
                     // logger.warn("FIxed OM cost is  " + fixedOnMCost);
 
                     // logger.warn("fixed operation and maintenance cost is " +
