@@ -334,10 +334,14 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                             .getTechnology().getCapacity())) + (plant.getTechnology()
                             .getVariableOperatingCostinEURPerMWh() * energy)));
 
-                    // logger.warn("2 Range " + (range1*mc));
+                    // logger.warn("1 Before Clearing Yr " +
+                    // plant.getCapacityMarketClearingYear());
 
-                    if ((totalProfit + plant.getProfitability()) < 0) {
-
+                    if ((totalProfit + plant.getProfitability()) < 0
+                            && plant.isHasLongtermCapacityMarketContract() != true
+                            && getCurrentTick() > plant.getCapacityMarketClearingYear()) {
+                        // logger.warn("2 Before Clearing Yr " +
+                        // plant.getCapacityMarketClearingYear());
                         // REMAINING LOAN-----//
                         Loan loan = plant.getLoan();
 

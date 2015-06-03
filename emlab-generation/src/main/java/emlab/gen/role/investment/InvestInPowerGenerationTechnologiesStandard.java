@@ -465,7 +465,7 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
                 for (PowerGeneratingTechnology technology : reps.genericRepository
                         .findAll(PowerGeneratingTechnology.class)) {
 
-                    if (technology.getExpectedLeadtime() + technology.getExpectedPermittime() <= 4
+                    if (technology.getExpectedLeadtime() + technology.getExpectedPermittime() <= reg.getTargetPeriod()
                             && technology.getNetPresentValue() > 0
                             && technology.getNetPresentValue() <= capacityMarketCap) {
 

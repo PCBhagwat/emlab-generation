@@ -97,6 +97,8 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                         currentCDP.setStatus(Bid.ACCEPTED);
                         currentCDP.setAcceptedAmount(currentCDP.getAmount());
                         sumofSupplyBidsAccepted = sumofSupplyBidsAccepted + currentCDP.getAmount();
+                        updateCapacityAuctionForwardYear(currentCDP.getPlant(), getCurrentTick(), regulator);
+
                         // logger.warn("Price of this cdp is " +
                         // currentCDP.getPrice());
                         // logger.warn("accepted price" + acceptedPrice);
@@ -108,6 +110,7 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
                         currentCDP.setAcceptedAmount((sumofSupplyBidsAccepted - demand));
                         acceptedPrice = currentCDP.getPrice();
                         sumofSupplyBidsAccepted = sumofSupplyBidsAccepted + currentCDP.getAcceptedAmount();
+                        updateCapacityAuctionForwardYear(currentCDP.getPlant(), getCurrentTick(), regulator);
                         isTheMarketCleared = true;
 
                         // logger.warn("accepted price" + acceptedPrice);
@@ -238,6 +241,11 @@ public class ClearCapacityMarketRole extends AbstractRole<Regulator> implements 
     @Transactional
     private void deleteTemporaryPowerPlants(PowerPlant plant, long tick) {
         plant.dismantlePowerPlant(tick);
+    }
+
+    @Transactional
+    private void updateCapacityAuctionForwardYear(PowerPlant plant, long tick, Regulator regulator) {
+        plant.setCapacityMarketClearingYear(getCurrentTick() + (regulator.getTargetPeriod()));
     }
 
     @Transactional
