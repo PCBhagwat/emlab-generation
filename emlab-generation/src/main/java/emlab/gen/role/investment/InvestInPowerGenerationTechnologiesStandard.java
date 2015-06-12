@@ -313,34 +313,60 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
 
                         double capacityRevenue = 0d;
                         double sumCapacityRevenue = 0d;
+                        double totalPeakCapacityAtFuturePoint = 0d;
+                        double totalPeakDemandAtFuturePoint = 0d;
+
                         if ((agent.isSimpleCapacityMarketEnabled()) && (regulator != null)) {
-                            // Use previous year as starting point for long term
-                            // capacity market
-                            long time = 0l;
-                            for (time = getCurrentTick() - 1; time > getCurrentTick()
-                                    - agent.getNumberOfYearsBacklookingForForecasting()
-                                    && time > 0; time = time - 1) {
-                                double capacityRevenueTemp = reps.capacityMarketRepository
-                                        .findOneClearingPointForTimeAndCapacityMarket(time, cMarket).getPrice();
-                                sumCapacityRevenue += capacityRevenueTemp;
+
+                            totalPeakCapacityAtFuturePoint = reps.powerPlantRepository
+                                    .calculatePeakCapacityOfOperationalPowerPlantsInMarket(market, futureTimePoint);
+                            expectedDemand.get(market).doubleValue();
+                            totalPeakDemandAtFuturePoint = reps.segmentLoadRepository.peakLoadbyMarketandTime(market,
+                                    futureTimePoint) * (1 + regulator.getReserveMargin());
+
+                            if ((totalPeakDemandAtFuturePoint - totalPeakCapacityAtFuturePoint > 0)) {
+
+                                SimpleRegression sr = new SimpleRegression();
+                                long time = 0l;
+                                for (time = getCurrentTick(); time > getCurrentTick()
+                                        - agent.getNumberOfYearsBacklookingForForecasting()
+                                        && time > 0; time = time - 1) {
+                                    double capacityRevenueTemp = reps.capacityMarketRepository
+                                            .findOneClearingPointForTimeAndCapacityMarket(time, cMarket).getPrice();
+                                    sr.addData(time, capacityRevenueTemp);
+                                    // sumCapacityRevenue +=
+                                    // capacityRevenueTemp;
+                                }
+
+                                sumCapacityRevenue = (sr.predict(futureTimePoint));
+
+                                if (sumCapacityRevenue > regulator.getCapacityMarketPriceCap()) {
+                                    sumCapacityRevenue = regulator.getCapacityMarketPriceCap();
+                                }
+                                // logger.warn(" And capacity (peak segment) is"
+                                // +
+                                // plant.getExpectedAvailableCapacity(futureTimePoint,
+                                // peakSegment, numberOfSegments));
+                                // logger.warn(" And capacity (null) is"
+                                // +
+                                // plant.getExpectedAvailableCapacity(futureTimePoint,
+                                // null, numberOfSegments));
+                                capacityRevenue = plant.getTechnology().getCapacity()
+                                        * plant.getTechnology().getPeakSegmentDependentAvailability()
+                                        * sumCapacityRevenue;
+
+                                // capacityRevenue =
+                                // plant.getExpectedAvailableCapacity(futureTimePoint,
+                                // peakSegment,
+                                // numberOfSegments) * sumCapacityRevenue /
+                                // (getCurrentTick() - time);
                             }
-                            // logger.warn(" And capacity (peak segment) is"
-                            // +
-                            // plant.getExpectedAvailableCapacity(futureTimePoint,
-                            // peakSegment, numberOfSegments));
-                            // logger.warn(" And capacity (null) is"
-                            // +
-                            // plant.getExpectedAvailableCapacity(futureTimePoint,
-                            // null, numberOfSegments));
-                            capacityRevenue = plant.getExpectedAvailableCapacity(futureTimePoint, peakSegment,
-                                    numberOfSegments) * sumCapacityRevenue / (getCurrentTick() - time);
                         } else {
                             capacityRevenue = 0;
                         }
                         // logger.warn("Capacity Revenue" + capacityRevenue);
 
                         operatingProfit = operatingProfit + capacityRevenue;
-
                         // TODO Alter discount rate on the basis of the amount
                         // in long-term contracts?
                         // TODO Alter discount rate on the basis of other stuff,

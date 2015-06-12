@@ -15,6 +15,7 @@
  ******************************************************************************/
 package emlab.gen.role.capacitymarket;
 
+import org.apache.commons.math.stat.regression.SimpleRegression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,6 @@ import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.Reps;
-import emlab.gen.util.GeometricTrendRegression;
 
 /**
  * @author Kaveri
@@ -75,13 +75,13 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
             expectedDemandFactor = market.getDemandGrowthTrend().getValue(getCurrentTick());
         } else {
 
-            GeometricTrendRegression gtr = new GeometricTrendRegression();
+            SimpleRegression sr = new SimpleRegression();
             for (long time = getCurrentTick() - 1; time > getCurrentTick() - 1
                     - regulator.getNumberOfYearsLookingBackToForecastDemand()
                     && time >= 0; time = time - 1) {
-                gtr.addData(time, market.getDemandGrowthTrend().getValue(time));
+                sr.addData(time, market.getDemandGrowthTrend().getValue(time));
             }
-            expectedDemandFactor = gtr.predict(capabilityYear);
+            expectedDemandFactor = sr.predict(capabilityYear);
         }
         logger.warn("ExpectedDemandFactor for this tick: " + expectedDemandFactor);
         logger.warn("demand factor " + market.getDemandGrowthTrend().getValue(getCurrentTick()));
