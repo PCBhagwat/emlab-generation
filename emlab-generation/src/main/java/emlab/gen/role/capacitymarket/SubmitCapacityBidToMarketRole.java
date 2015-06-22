@@ -171,7 +171,6 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
 
                     double capacity = plant.getActualNominalCapacity()
                             * plant.getTechnology().getPeakSegmentDependentAvailability();
-
                     CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
                     plan.specifyAndPersist(plant, producer, market, getCurrentTick(), bidPrice, capacity, Bid.SUBMITTED);
 
