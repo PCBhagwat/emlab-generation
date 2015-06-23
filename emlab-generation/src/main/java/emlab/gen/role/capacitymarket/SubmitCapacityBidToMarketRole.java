@@ -138,10 +138,13 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                             }
 
                         } else {
-                            if (getCurrentTick() <= 2) {
+                            if (getCurrentTick() <= 2 && getCurrentTick() > 0) {
                                 segmentClearingPoint = reps.segmentClearingPointRepository
                                         .findSegmentClearingPointForMarketSegmentAndTime(getCurrentTick() - 1,
                                                 segmentLoad.getSegment(), eMarket, false).getPrice();
+                            }
+                            if (getCurrentTick() == 0) {
+                                segmentClearingPoint = 0;
                             }
                         }
 
@@ -161,14 +164,18 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                     }
 
                     netRevenues = (expectedElectricityRevenues / plant.getActualNominalCapacity()) - fixedOnMCost;
-
-                    if (netRevenues >= 0) {
-                        bidPrice = 0d;
-                        // } else if (mcCapacity <= fixedOnMCost) {
+                    if (getCurrentTick() > 0) {
+                        if (netRevenues >= 0) {
+                            bidPrice = 0d;
+                            // } else if (mcCapacity <= fixedOnMCost) {
+                        } else {
+                            bidPrice = netRevenues * (-1);
+                        }
                     } else {
-                        bidPrice = netRevenues * (-1);
+                        if (getCurrentTick() == 0) {
+                            bidPrice = 0;
+                        }
                     }
-
                     double capacity = plant.getActualNominalCapacity()
                             * plant.getTechnology().getPeakSegmentDependentAvailability();
                     CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
