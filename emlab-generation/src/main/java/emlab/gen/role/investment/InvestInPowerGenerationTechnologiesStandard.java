@@ -94,6 +94,16 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
     @Override
     public void act(T agent) {
 
+        double longtermContractedCapacity = 0;
+        for (PowerPlant plant3 : reps.powerPlantRepository.findPowerPlantsInMarket(agent.getInvestorMarket())) {
+            if (plant3.isHasLongtermCapacityMarketContract() == true) {
+                double capacity = plant3.getTechnology().getCapacity()
+                        * plant3.getTechnology().getPeakSegmentDependentAvailability();
+                longtermContractedCapacity = longtermContractedCapacity + capacity;
+
+            }
+        }
+
         long futureTimePoint = getCurrentTick() + agent.getInvestmentFutureTimeHorizon();
         // logger.warn(agent + " is looking at timepoint " + futureTimePoint);
 
@@ -318,52 +328,79 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
                         double resPeakCapacity = 0d;
 
                         if ((agent.isSimpleCapacityMarketEnabled()) && (regulator != null)) {
-
-                            totalPeakCapacityAtFuturePoint = reps.powerPlantRepository
-                                    .calculatePeakCapacityOfOperationalPowerPlantsInMarket(market, futureTimePoint);
-                            expectedDemand.get(market).doubleValue();
-                            totalPeakDemandAtFuturePoint = reps.segmentLoadRepository.peakLoadbyMarketandTime(market,
-                                    futureTimePoint);
-
-                            TargetInvestor tInvestor = reps.targetInvestorRepository.findInvestorByMarket(market);
-                            for (PowerPlant resPlant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(
-                                    tInvestor, futureTimePoint)) {
-                                resPeakCapacity = resPeakCapacity
-                                        + (resPlant.getActualNominalCapacity() * resPlant.getTechnology()
-                                                .getPeakSegmentDependentAvailability());
-                            }
-
-                            totalPeakCapacityAtFuturePoint = totalPeakCapacityAtFuturePoint
-                                    - resPeakCapacity
-                                    + (plant.getActualNominalCapacity() * plant.getTechnology()
-                                            .getPeakSegmentDependentAvailability());
-
-                            if (totalPeakCapacityAtFuturePoint <= (totalPeakDemandAtFuturePoint * (1 + (regulator
-                                    .getReserveMargin() - regulator.getReserveDemandLowerMargin())))) {
-
-                                capacityRevenue = plant.getTechnology().getCapacity()
-                                        * plant.getTechnology().getPeakSegmentDependentAvailability()
-                                        * regulator.getCapacityMarketPriceCap();
-                            }
-
-                            if ((totalPeakCapacityAtFuturePoint > (totalPeakDemandAtFuturePoint * (1 + (regulator
-                                    .getReserveMargin() - regulator.getReserveDemandLowerMargin()))) && totalPeakCapacityAtFuturePoint <= (totalPeakDemandAtFuturePoint * (1 + (regulator
-                                    .getReserveMargin() + regulator.getReserveDemandUpperMargin()))))) {
-
-                                double reserveMargin = 1 + regulator.getReserveMargin();
-                                double lowerMargin = reserveMargin - regulator.getReserveDemandLowerMargin();
-                                double upperMargin = reserveMargin + regulator.getReserveDemandUpperMargin();
-                                double marketCap = regulator.getCapacityMarketPriceCap();
-
-                                capacityRevenue = (-(marketCap / (upperMargin - lowerMargin)) * ((totalPeakCapacityAtFuturePoint / totalPeakDemandAtFuturePoint) - upperMargin))
-                                        * plant.getTechnology().getCapacity()
-                                        * plant.getTechnology().getPeakSegmentDependentAvailability();
-                            }
-                            if (totalPeakCapacityAtFuturePoint > (totalPeakDemandAtFuturePoint * (1 + (regulator
-                                    .getReserveMargin() + regulator.getReserveDemandUpperMargin())))) {
-                                capacityRevenue = 0;
-                            }
-                        } else {
+                            //
+                            // totalPeakCapacityAtFuturePoint =
+                            // reps.powerPlantRepository
+                            // .calculatePeakCapacityOfOperationalPowerPlantsInMarket(market,
+                            // futureTimePoint);
+                            // expectedDemand.get(market).doubleValue();
+                            // totalPeakDemandAtFuturePoint =
+                            // reps.segmentLoadRepository.peakLoadbyMarketandTime(market,
+                            // futureTimePoint) - longtermContractedCapacity;
+                            //
+                            // TargetInvestor tInvestor =
+                            // reps.targetInvestorRepository.findInvestorByMarket(market);
+                            // for (PowerPlant resPlant :
+                            // reps.powerPlantRepository.findOperationalPowerPlantsByOwner(
+                            // tInvestor, futureTimePoint)) {
+                            // resPeakCapacity = resPeakCapacity
+                            // + (resPlant.getActualNominalCapacity() *
+                            // resPlant.getTechnology()
+                            // .getPeakSegmentDependentAvailability());
+                            // }
+                            //
+                            // totalPeakCapacityAtFuturePoint =
+                            // totalPeakCapacityAtFuturePoint
+                            // - resPeakCapacity
+                            // - longtermContractedCapacity
+                            // + (plant.getActualNominalCapacity() *
+                            // plant.getTechnology()
+                            // .getPeakSegmentDependentAvailability());
+                            //
+                            // if (totalPeakCapacityAtFuturePoint <=
+                            // (totalPeakDemandAtFuturePoint * (1 + (regulator
+                            // .getReserveMargin() -
+                            // regulator.getReserveDemandLowerMargin())))) {
+                            //
+                            // capacityRevenue =
+                            // plant.getTechnology().getCapacity()
+                            // *
+                            // plant.getTechnology().getPeakSegmentDependentAvailability()
+                            // * regulator.getCapacityMarketPriceCap();
+                            // }
+                            //
+                            // if ((totalPeakCapacityAtFuturePoint >
+                            // (totalPeakDemandAtFuturePoint * (1 + (regulator
+                            // .getReserveMargin() -
+                            // regulator.getReserveDemandLowerMargin()))) &&
+                            // totalPeakCapacityAtFuturePoint <=
+                            // (totalPeakDemandAtFuturePoint * (1 + (regulator
+                            // .getReserveMargin() +
+                            // regulator.getReserveDemandUpperMargin()))))) {
+                            //
+                            // double reserveMargin = 1 +
+                            // regulator.getReserveMargin();
+                            // double lowerMargin = reserveMargin -
+                            // regulator.getReserveDemandLowerMargin();
+                            // double upperMargin = reserveMargin +
+                            // regulator.getReserveDemandUpperMargin();
+                            // double marketCap =
+                            // regulator.getCapacityMarketPriceCap();
+                            //
+                            // capacityRevenue = (-(marketCap / (upperMargin -
+                            // lowerMargin)) * ((totalPeakCapacityAtFuturePoint
+                            // / totalPeakDemandAtFuturePoint) - upperMargin))
+                            // * plant.getTechnology().getCapacity()
+                            // *
+                            // plant.getTechnology().getPeakSegmentDependentAvailability();
+                            // }
+                            // if (totalPeakCapacityAtFuturePoint >
+                            // (totalPeakDemandAtFuturePoint * (1 + (regulator
+                            // .getReserveMargin() +
+                            // regulator.getReserveDemandUpperMargin())))) {
+                            // capacityRevenue = 0;
+                            // }
+                            // } else {
                             capacityRevenue = 0;
                         }
                         // logger.warn("Capacity Revenue" + capacityRevenue);

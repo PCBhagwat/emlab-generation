@@ -23,6 +23,7 @@ import agentspring.role.AbstractRole;
 import agentspring.role.Role;
 import agentspring.role.RoleComponent;
 import emlab.gen.domain.agent.Regulator;
+import emlab.gen.domain.agent.TargetInvestor;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
 import emlab.gen.domain.technology.PowerPlant;
@@ -47,6 +48,14 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
         Zone zone = regulator.getZone();
         ElectricitySpotMarket market = reps.marketRepository.findElectricitySpotMarketForZone(zone);
 
+        double resPeakCapacity = 0;
+        TargetInvestor tInvestor = reps.targetInvestorRepository.findInvestorByMarket(market);
+        for (PowerPlant resPlant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(tInvestor,
+                getCurrentTick())) {
+            resPeakCapacity = resPeakCapacity
+                    + (resPlant.getActualNominalCapacity() * resPlant.getTechnology()
+                            .getPeakSegmentDependentAvailability());
+        }
         // double trend =
         // market.getDemandGrowthTrend().getValue(getCurrentTick());
         // double peakLoadforMarket = trend * peakLoadforMarketNOtrend;
@@ -91,7 +100,8 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
         double peakExpectedDemand = peakLoadforMarketNOtrend * expectedDemandFactor;
 
         // Compute demand target by multiplying reserve margin double double
-        double demandTarget = ((peakExpectedDemand - longtermContractedCapacity) * (1 + regulator.getReserveMargin()));
+        double demandTarget = ((peakExpectedDemand - longtermContractedCapacity - resPeakCapacity) * (1 + regulator
+                .getReserveMargin()));
         // logger.warn("substract " + longtermContractedCapacity + " underated "
         // + ((peakExpectedDemand * (1 + regulator.getReserveMargin())) +
         // " derated " + demandTarget));

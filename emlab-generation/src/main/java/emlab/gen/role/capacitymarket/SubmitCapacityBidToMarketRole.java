@@ -69,14 +69,14 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                     && plant.isHasLongtermCapacityMarketContract() == false
                     && currentLifeTime > (regulator.getCapacityMarketPermittedTimeForConstruction() * (-1))
                     && currentLifeTime <= 0) {
-
                 double capacity = plant.getTechnology().getCapacity()
                         * plant.getTechnology().getPeakSegmentDependentAvailability();
                 CapacityMarket market = reps.capacityMarketRepository.findCapacityMarketForZone(plant.getLocation()
                         .getZone());
 
                 CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
-                plan.specifyAndPersist(plant, producer, market, getCurrentTick(), 0, capacity, Bid.SUBMITTED);
+                plan.specifyAndPersist(plant, producer, market, getCurrentTick(), plant.getActualFixedOperatingCost()
+                        / plant.getTechnology().getCapacity(), capacity, Bid.SUBMITTED);
 
             }
 
