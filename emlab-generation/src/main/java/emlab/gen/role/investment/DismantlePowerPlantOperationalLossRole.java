@@ -174,7 +174,7 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
             for (PowerPlant plant : reps.powerPlantRepository.findOperationalPowerPlantsInMarket(market,
                     getCurrentTick())) {
 
-                if (plant.getOwner().equals(reps.targetInvestorRepository.findInvestorByMarket(market))) {
+                if (plant.getOwner().equals(reps.targetInvestorRepository.findTargetInvestorByMarket(market))) {
 
                     double prolongYearsOfDismantlng = plant.getTechnology().getMaximumLifeExtension()
                             + plant.getTechnology().getExpectedLifetime();
@@ -201,6 +201,7 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
 
             double longtermContractedCapacity = 0;
             double unbuiltCapacity = 0;
+            double unbuiltRESCapacity = 0;
             Regulator regulator1 = reps.regulatorRepository.findRegulatorForZone(market.getZone());
             for (PowerPlant plant3 : reps.powerPlantRepository.findPowerPlantsInMarket(market)) {
                 long currentLifeTime = getCurrentTick() - plant3.getConstructionStartTime()
@@ -214,13 +215,23 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
 
                 if (plant3.isHasLongtermCapacityMarketContract() != true
                         && currentLifeTime > (regulator1.getCapacityMarketPermittedTimeForConstruction() * (-1))
-                        && currentLifeTime <= 0) {
+                        && currentLifeTime < 0) {
+
+                    logger.warn("1 Owner " + plant3.getName());
                     unbuiltCapacity = unbuiltCapacity + plant3.getTechnology().getCapacity()
+                            * plant3.getTechnology().getPeakSegmentDependentAvailability();
+
+                }
+                if (plant3.getOwner().equals(reps.targetInvestorRepository.findTargetInvestorByMarket(market))
+                        && currentLifeTime > (regulator1.getCapacityMarketPermittedTimeForConstruction() * (-1))
+                        && currentLifeTime < 0) {
+                    logger.warn("2 Owner " + plant3.getOwner());
+                    unbuiltRESCapacity = unbuiltRESCapacity + plant3.getTechnology().getCapacity()
                             * plant3.getTechnology().getPeakSegmentDependentAvailability();
                 }
 
             }
-            logger.warn("2 CP " + unbuiltCapacity);
+            logger.warn("Total  " + unbuiltCapacity + " RES  " + unbuiltRESCapacity);
             for (PowerPlant plant : reps.powerPlantRepository
                     .findOperationalPowerPlantsByAscendingProfitabilityAndMarket(market, getCurrentTick())) {
                 // logger.warn("profitability " + plant.getProfitability());
@@ -382,7 +393,7 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                     // yIterator > 0; yIterator++) {
                     // counter += 1;
 
-                    TargetInvestor tInvestor = reps.targetInvestorRepository.findInvestorByMarket(market);
+                    TargetInvestor tInvestor = reps.targetInvestorRepository.findTargetInvestorByMarket(market);
                     for (PowerPlant resPlant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(tInvestor,
                             getCurrentTick())) {
                         resPeakCapacity = resPeakCapacity
@@ -392,7 +403,7 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
 
                     double totalPeakCapacityAtFuturePoint = (reps.powerPlantRepository
                             .calculatePeakCapacityOfOperationalPowerPlantsInMarket(market, getCurrentTick()))
-                            - longtermContractedCapacity - resPeakCapacity + unbuiltCapacity;
+                            - longtermContractedCapacity - resPeakCapacity + unbuiltCapacity - unbuiltRESCapacity;
                     double totalPeakDemandAtFuturePoint = (reps.segmentLoadRepository.peakLoadbyMarketandTime(market,
                             getCurrentTick())) - longtermContractedCapacity - resPeakCapacity;
 
@@ -405,7 +416,8 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                             cmRevenue = plant.getTechnology().getCapacity()
                                     * plant.getTechnology().getPeakSegmentDependentAvailability()
                                     * regulator.getCapacityMarketPriceCap();
-                            logger.warn("1 CP " + regulator.getCapacityMarketPriceCap());
+                            // logger.warn("1 CP " +
+                            // regulator.getCapacityMarketPriceCap());
                         }
 
                         if ((totalPeakCapacityAtFuturePoint > (totalPeakDemandAtFuturePoint * (1 + (regulator
@@ -420,23 +432,26 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                             cmRevenue = (-(marketCap / (upperMargin - lowerMargin)) * ((totalPeakCapacityAtFuturePoint / totalPeakDemandAtFuturePoint) - upperMargin))
                                     * plant.getTechnology().getCapacity()
                                     * plant.getTechnology().getPeakSegmentDependentAvailability();
-                            logger.warn("2 CP "
-                                    + (-(marketCap / (upperMargin - lowerMargin)) * ((totalPeakCapacityAtFuturePoint / totalPeakDemandAtFuturePoint) - upperMargin)));
+                            // logger.warn("2 CP "
+                            // + (-(marketCap / (upperMargin - lowerMargin)) *
+                            // ((totalPeakCapacityAtFuturePoint /
+                            // totalPeakDemandAtFuturePoint) - upperMargin)));
                         }
 
                         if (totalPeakCapacityAtFuturePoint > (totalPeakDemandAtFuturePoint * (1 + (regulator
                                 .getReserveMargin() + regulator.getReserveDemandUpperMargin())))) {
                             cmRevenue = 0;
-                            logger.warn("3 CP " + cmRevenue);
+                            // logger.warn("3 CP " + cmRevenue);
                         }
                     } else {
                         if (plant.isHasLongtermCapacityMarketContract() == true) {
                             cmRevenue = (plant.getLongtermcapacitycontractPrice())
                                     * plant.getTechnology().getCapacity()
                                     * plant.getTechnology().getPeakSegmentDependentAvailability();
-                            logger.warn("4 CP " + plant.getLongtermcapacitycontractPrice());
+                            // logger.warn("4 CP " +
+                            // plant.getLongtermcapacitycontractPrice());
                         } else {
-                            logger.warn("5 CP " + cmRevenue);
+                            // logger.warn("5 CP " + cmRevenue);
                             cmRevenue = 0;
                         }
                     }
@@ -474,10 +489,12 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                     // plant.getCapacityMarketClearingYear());
 
                     if ((totalProfit) < 0 && plant.isHasLongtermCapacityMarketContract() != true
-                            && getCurrentTick() > plant.getCapacityMarketClearingYear()) {
+                            && (plant.getActualLifetime() > 0)) {
                         // logger.warn("2 Before Clearing Yr " +
                         // plant.getCapacityMarketClearingYear());
                         // REMAINING LOAN-----//
+                        // && getCurrentTick() >
+                        // plant.getCapacityMarketClearingYear()
                         Loan loan = plant.getLoan();
 
                         if (loan != null) {
@@ -517,7 +534,7 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                                         downpayment);
                             }
                         }
-                        // logger.warn("dismantled " + plant.getName());
+                        logger.warn("dismantled " + plant.getActualLifetime());
                         plant.dismantlePowerPlant(getCurrentTick());
 
                     }
