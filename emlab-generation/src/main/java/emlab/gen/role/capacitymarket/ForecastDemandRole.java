@@ -49,13 +49,14 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
         ElectricitySpotMarket market = reps.marketRepository.findElectricitySpotMarketForZone(zone);
 
         double resPeakCapacity = 0;
-        TargetInvestor tInvestor = reps.targetInvestorRepository.findInvestorByMarket(market);
+        TargetInvestor tInvestor = reps.targetInvestorRepository.findTargetInvestorByMarket(market);
         for (PowerPlant resPlant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(tInvestor,
-                getCurrentTick())) {
+                capabilityYear)) {
             resPeakCapacity = resPeakCapacity
                     + (resPlant.getActualNominalCapacity() * resPlant.getTechnology()
                             .getPeakSegmentDependentAvailability());
         }
+        logger.warn("1 RES " + resPeakCapacity);
         // double trend =
         // market.getDemandGrowthTrend().getValue(getCurrentTick());
         // double peakLoadforMarket = trend * peakLoadforMarketNOtrend;
@@ -78,10 +79,11 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
 
             }
         }
+        logger.warn("2 LT: " + longtermContractedCapacity);
         double expectedDemandFactor = 0d;
         if (getCurrentTick() < 2) {
 
-            expectedDemandFactor = market.getDemandGrowthTrend().getValue(getCurrentTick());
+            expectedDemandFactor = market.getDemandGrowthTrend().getValue(capabilityYear);
         } else {
 
             SimpleRegression sr = new SimpleRegression();
@@ -92,8 +94,11 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
             }
             expectedDemandFactor = sr.predict(capabilityYear);
         }
-        logger.warn("ExpectedDemandFactor for this tick: " + expectedDemandFactor);
-        logger.warn("demand factor " + market.getDemandGrowthTrend().getValue(getCurrentTick()));
+
+        // logger.warn("ExpectedDemandFactor for this tick: " +
+        // expectedDemandFactor);
+        // logger.warn("demand factor " +
+        // market.getDemandGrowthTrend().getValue(getCurrentTick()));
         // Calculate peak demand across all markets
 
         double peakLoadforMarketNOtrend = reps.segmentLoadRepository.peakLoadbyZoneMarketandTime(zone, market);
@@ -102,6 +107,8 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
         // Compute demand target by multiplying reserve margin double double
         double demandTarget = ((peakExpectedDemand - longtermContractedCapacity - resPeakCapacity) * (1 + regulator
                 .getReserveMargin()));
+        logger.warn("3 PEX: " + peakExpectedDemand + " FY: " + capabilityYear);
+        logger.warn("4 REM: " + demandTarget);
         // logger.warn("substract " + longtermContractedCapacity + " underated "
         // + ((peakExpectedDemand * (1 + regulator.getReserveMargin())) +
         // " derated " + demandTarget));

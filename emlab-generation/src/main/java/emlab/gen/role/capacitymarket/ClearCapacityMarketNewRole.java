@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import agentspring.role.AbstractRole;
 import agentspring.role.Role;
 import agentspring.role.RoleComponent;
-import emlab.gen.domain.agent.BigBank;
 import emlab.gen.domain.agent.EnergyProducer;
 import emlab.gen.domain.agent.PowerPlantManufacturer;
 import emlab.gen.domain.agent.Regulator;
@@ -73,10 +72,14 @@ public class ClearCapacityMarketNewRole extends AbstractRole<Regulator> implemen
         if (regulator.getDemandTarget() == 0) {
             isTheMarketCleared = true;
             clearingPrice = 0;
+            logger.warn("!!Reg Test!!");
+
         }
 
         for (CapacityDispatchPlan currentCDP : reps.capacityMarketRepository
                 .findAllSortedCapacityDispatchPlansByTime(getCurrentTick())) {
+            // logger.warn("Price " + currentCDP.getPrice() + " LT "
+            // + currentCDP.getPlant().isTemporaryPlantforCapacityMarketBid());
             totalVolumeBid = totalVolumeBid + currentCDP.getAmount();
         }
         logger.warn("2 TotVol "
@@ -132,6 +135,7 @@ public class ClearCapacityMarketNewRole extends AbstractRole<Regulator> implemen
                             clearingPrice = currentCDP.getPrice();
                             totalContractedCapacity = totalContractedCapacity + currentCDP.getAcceptedAmount();
                             isTheMarketCleared = true;
+                            currentCDP.persist();
                         }
                         if (tempAcceptedAmount < 0) {
                             clearingPrice = -(marketCap / (upperMargin - lowerMargin))
@@ -163,6 +167,17 @@ public class ClearCapacityMarketNewRole extends AbstractRole<Regulator> implemen
                 if (currentCDP.getStatus() == Bid.SUBMITTED) {
                     currentCDP.setStatus(Bid.FAILED);
                     currentCDP.setAcceptedAmount(0);
+                }
+            }
+        }
+
+        if (isTheMarketCleared == true) {
+            for (CapacityDispatchPlan currentCDP : reps.capacityMarketRepository
+                    .findAllSortedCapacityDispatchPlansByTime(getCurrentTick())) {
+                if (currentCDP.getStatus() == Bid.ACCEPTED || currentCDP.getStatus() == Bid.PARTLY_ACCEPTED) {
+                    updateCapacityDeliveryYear(currentCDP.getPlant(), getCurrentTick(), regulator);
+                    // logger.warn("Target Year " +
+                    // currentCDP.getPlant().getCapacityDeliveryYear());
                 }
             }
         }
@@ -202,6 +217,7 @@ public class ClearCapacityMarketNewRole extends AbstractRole<Regulator> implemen
         for (PowerPlant plant : reps.powerPlantRepository.findPowerPlantsInMarket(eMarket)) {
             if (plant.isTemporaryPlantforCapacityMarketBid() == true) {
                 deleteTemporaryPowerPlants(plant, getCurrentTick());
+                plant.persist();
             }
         }
 
@@ -243,6 +259,11 @@ public class ClearCapacityMarketNewRole extends AbstractRole<Regulator> implemen
     }
 
     @Transactional
+    private void updateCapacityDeliveryYear(PowerPlant plant, long tick, Regulator regulator) {
+        plant.setCapacityDeliveryYear(getCurrentTick() + (regulator.getTargetPeriod()));
+    }
+
+    @Transactional
     private void updatePlantsClearedForLongTermCapacityContract(CapacityMarket market,
             CapacityClearingPoint clearingPoint, Regulator regulator) {
         for (CapacityDispatchPlan plan : reps.capacityMarketRepository.findAllAcceptedCapacityDispatchPlansForTime(
@@ -252,34 +273,47 @@ public class ClearCapacityMarketNewRole extends AbstractRole<Regulator> implemen
                     - plan.getPlant().getTechnology().getExpectedLeadtime()
                     - plan.getPlant().getTechnology().getExpectedPermittime();
 
-            if (plan.getPlant().isTemporaryPlantforCapacityMarketBid() == true) {
-                PowerPlantManufacturer manufacturer = reps.genericRepository.findFirst(PowerPlantManufacturer.class);
-
-                BigBank bigbank = reps.genericRepository.findFirst(BigBank.class);
-
-                double investmentCostPayedByEquity = plan.getPlant().getActualInvestedCapital()
-                        * (1 - plan.getPlant().getOwner().getDebtRatioOfInvestments());
-                double investmentCostPayedByDebt = plan.getPlant().getActualInvestedCapital()
-                        * plan.getPlant().getOwner().getDebtRatioOfInvestments();
-                double downPayment = investmentCostPayedByEquity;
-                createSpreadOutDownPayments(plan.getPlant().getOwner(), manufacturer, downPayment, plan.getPlant());
-
-                double amount = determineLoanAnnuities(investmentCostPayedByDebt, plan.getPlant().getTechnology()
-                        .getDepreciationTime(), plan.getPlant().getOwner().getLoanInterestRate());
-
-                // logger.warn("Loan amount is: " + amount);
-                Loan loan = reps.loanRepository.createLoan(plan.getPlant().getOwner(), bigbank, amount, plan.getPlant()
-                        .getTechnology().getDepreciationTime(), getCurrentTick(), plan.getPlant());
-
-                // Create the loan
-                plan.getPlant().createOrUpdateLoan(loan);
-                plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
-                plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractLengthinYears());
-                plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);
-                plan.getPlant().setHasLongtermCapacityMarketContract(true);
-                plan.getPlant().persist();
-
-            }
+            // if (plan.getPlant().isTemporaryPlantforCapacityMarketBid() ==
+            // true) {
+            // logger.warn("TEMP: " + plan.getPrice() + "TEMP: " +
+            // plan.getPlant());
+            // PowerPlantManufacturer manufacturer =
+            // reps.genericRepository.findFirst(PowerPlantManufacturer.class);
+            //
+            // BigBank bigbank =
+            // reps.genericRepository.findFirst(BigBank.class);
+            //
+            // double investmentCostPayedByEquity =
+            // plan.getPlant().getActualInvestedCapital()
+            // * (1 - plan.getPlant().getOwner().getDebtRatioOfInvestments());
+            // double investmentCostPayedByDebt =
+            // plan.getPlant().getActualInvestedCapital()
+            // * plan.getPlant().getOwner().getDebtRatioOfInvestments();
+            // double downPayment = investmentCostPayedByEquity;
+            // createSpreadOutDownPayments(plan.getPlant().getOwner(),
+            // manufacturer, downPayment, plan.getPlant());
+            //
+            // double amount = determineLoanAnnuities(investmentCostPayedByDebt,
+            // plan.getPlant().getTechnology()
+            // .getDepreciationTime(),
+            // plan.getPlant().getOwner().getLoanInterestRate());
+            //
+            // // logger.warn("Loan amount is: " + amount);
+            // Loan loan =
+            // reps.loanRepository.createLoan(plan.getPlant().getOwner(),
+            // bigbank, amount, plan.getPlant()
+            // .getTechnology().getDepreciationTime(), getCurrentTick(),
+            // plan.getPlant());
+            //
+            // // Create the loan
+            // plan.getPlant().createOrUpdateLoan(loan);
+            // plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());
+            // plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractLengthinYears());
+            // plan.getPlant().setTemporaryPlantforCapacityMarketBid(false);
+            // plan.getPlant().setHasLongtermCapacityMarketContract(true);
+            // plan.getPlant().persist();
+            //
+            // }
             if (currentLifeTime <= 0 && plan.getPlant().isHasLongtermCapacityMarketContract() != true
                     && plan.getPlant().isTemporaryPlantforCapacityMarketBid() != true) {
                 plan.getPlant().setLongtermcapacitycontractPrice(clearingPoint.getPrice());

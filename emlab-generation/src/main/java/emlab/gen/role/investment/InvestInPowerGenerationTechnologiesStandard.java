@@ -328,79 +328,54 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
                         double resPeakCapacity = 0d;
 
                         if ((agent.isSimpleCapacityMarketEnabled()) && (regulator != null)) {
-                            //
-                            // totalPeakCapacityAtFuturePoint =
-                            // reps.powerPlantRepository
-                            // .calculatePeakCapacityOfOperationalPowerPlantsInMarket(market,
-                            // futureTimePoint);
-                            // expectedDemand.get(market).doubleValue();
-                            // totalPeakDemandAtFuturePoint =
-                            // reps.segmentLoadRepository.peakLoadbyMarketandTime(market,
-                            // futureTimePoint) - longtermContractedCapacity;
-                            //
-                            // TargetInvestor tInvestor =
-                            // reps.targetInvestorRepository.findInvestorByMarket(market);
-                            // for (PowerPlant resPlant :
-                            // reps.powerPlantRepository.findOperationalPowerPlantsByOwner(
-                            // tInvestor, futureTimePoint)) {
-                            // resPeakCapacity = resPeakCapacity
-                            // + (resPlant.getActualNominalCapacity() *
-                            // resPlant.getTechnology()
-                            // .getPeakSegmentDependentAvailability());
-                            // }
-                            //
-                            // totalPeakCapacityAtFuturePoint =
-                            // totalPeakCapacityAtFuturePoint
-                            // - resPeakCapacity
-                            // - longtermContractedCapacity
-                            // + (plant.getActualNominalCapacity() *
-                            // plant.getTechnology()
-                            // .getPeakSegmentDependentAvailability());
-                            //
-                            // if (totalPeakCapacityAtFuturePoint <=
-                            // (totalPeakDemandAtFuturePoint * (1 + (regulator
-                            // .getReserveMargin() -
-                            // regulator.getReserveDemandLowerMargin())))) {
-                            //
-                            // capacityRevenue =
-                            // plant.getTechnology().getCapacity()
-                            // *
-                            // plant.getTechnology().getPeakSegmentDependentAvailability()
-                            // * regulator.getCapacityMarketPriceCap();
-                            // }
-                            //
-                            // if ((totalPeakCapacityAtFuturePoint >
-                            // (totalPeakDemandAtFuturePoint * (1 + (regulator
-                            // .getReserveMargin() -
-                            // regulator.getReserveDemandLowerMargin()))) &&
-                            // totalPeakCapacityAtFuturePoint <=
-                            // (totalPeakDemandAtFuturePoint * (1 + (regulator
-                            // .getReserveMargin() +
-                            // regulator.getReserveDemandUpperMargin()))))) {
-                            //
-                            // double reserveMargin = 1 +
-                            // regulator.getReserveMargin();
-                            // double lowerMargin = reserveMargin -
-                            // regulator.getReserveDemandLowerMargin();
-                            // double upperMargin = reserveMargin +
-                            // regulator.getReserveDemandUpperMargin();
-                            // double marketCap =
-                            // regulator.getCapacityMarketPriceCap();
-                            //
-                            // capacityRevenue = (-(marketCap / (upperMargin -
-                            // lowerMargin)) * ((totalPeakCapacityAtFuturePoint
-                            // / totalPeakDemandAtFuturePoint) - upperMargin))
-                            // * plant.getTechnology().getCapacity()
-                            // *
-                            // plant.getTechnology().getPeakSegmentDependentAvailability();
-                            // }
-                            // if (totalPeakCapacityAtFuturePoint >
-                            // (totalPeakDemandAtFuturePoint * (1 + (regulator
-                            // .getReserveMargin() +
-                            // regulator.getReserveDemandUpperMargin())))) {
-                            // capacityRevenue = 0;
-                            // }
-                            // } else {
+
+                            TargetInvestor tInvestor = reps.targetInvestorRepository.findInvestorByMarket(market);
+                            for (PowerPlant resPlant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(
+                                    tInvestor, (futureTimePoint))) {
+                                resPeakCapacity = resPeakCapacity
+                                        + (resPlant.getActualNominalCapacity() * resPlant.getTechnology()
+                                                .getPeakSegmentDependentAvailability());
+                            }
+
+                            totalPeakCapacityAtFuturePoint = reps.powerPlantRepository
+                                    .calculatePeakCapacityOfOperationalPowerPlantsInMarket(market, (futureTimePoint))
+                                    - longtermContractedCapacity - resPeakCapacity;
+
+                            expectedDemand.get(market).doubleValue();
+
+                            totalPeakDemandAtFuturePoint = reps.segmentLoadRepository.peakLoadbyMarketandTime(market,
+                                    (futureTimePoint)) - longtermContractedCapacity - resPeakCapacity;
+
+                            totalPeakCapacityAtFuturePoint = totalPeakCapacityAtFuturePoint
+                                    + (plant.getActualNominalCapacity() * plant.getTechnology()
+                                            .getPeakSegmentDependentAvailability());
+
+                            if (totalPeakCapacityAtFuturePoint <= (totalPeakDemandAtFuturePoint * (1 + (regulator
+                                    .getReserveMargin() - regulator.getReserveDemandLowerMargin())))) {
+
+                                capacityRevenue = plant.getTechnology().getCapacity()
+                                        * plant.getTechnology().getPeakSegmentDependentAvailability()
+                                        * regulator.getCapacityMarketPriceCap();
+                            }
+
+                            if ((totalPeakCapacityAtFuturePoint > (totalPeakDemandAtFuturePoint * (1 + (regulator
+                                    .getReserveMargin() - regulator.getReserveDemandLowerMargin()))) && totalPeakCapacityAtFuturePoint <= (totalPeakDemandAtFuturePoint * (1 + (regulator
+                                    .getReserveMargin() + regulator.getReserveDemandUpperMargin()))))) {
+
+                                double reserveMargin = 1 + regulator.getReserveMargin();
+                                double lowerMargin = reserveMargin - regulator.getReserveDemandLowerMargin();
+                                double upperMargin = reserveMargin + regulator.getReserveDemandUpperMargin();
+                                double marketCap = regulator.getCapacityMarketPriceCap();
+
+                                capacityRevenue = (-(marketCap / (upperMargin - lowerMargin)) * ((totalPeakCapacityAtFuturePoint / totalPeakDemandAtFuturePoint) - upperMargin))
+                                        * plant.getTechnology().getCapacity()
+                                        * plant.getTechnology().getPeakSegmentDependentAvailability();
+                            }
+                            if (totalPeakCapacityAtFuturePoint > (totalPeakDemandAtFuturePoint * (1 + (regulator
+                                    .getReserveMargin() + regulator.getReserveDemandUpperMargin())))) {
+                                capacityRevenue = 0;
+                            }
+                        } else {
                             capacityRevenue = 0;
                         }
                         // logger.warn("Capacity Revenue" + capacityRevenue);
@@ -443,13 +418,20 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
 
                         double projectValue = discountedOpProfit + discountedCapitalCosts;
                         // logger.warn("Project value" + projectValue);
-                        double capacityBid = 0;
-                        if (projectValue < 0 && (agent.isSimpleCapacityMarketEnabled()) && (regulator != null)) {
-                            capacityBid = calcualteCapacityMarketBidValue(
-                                    (projectValue - updateCapacityBidtoAccountCapacityMarketRevenues(capacityRevenue,
-                                            technology.getDepreciationTime(), (int) plant.getActualLeadtime(), wacc)),
-                                    regulator.getLongTermCapacityContractLengthinYears(), wacc);
-                        }
+
+                        // double capacityBid = 0;
+                        //
+                        // if (projectValue < 0 &&
+                        // (agent.isSimpleCapacityMarketEnabled()) && (regulator
+                        // != null)) {
+                        // capacityBid = calcualteCapacityMarketBidValue(
+                        // (projectValue -
+                        // updateCapacityBidtoAccountCapacityMarketRevenues(capacityRevenue,
+                        // technology.getDepreciationTime(), (int)
+                        // plant.getActualLeadtime(), wacc)),
+                        // regulator.getLongTermCapacityContractLengthinYears(),
+                        // wacc);
+                        // }
 
                         // if (technology.isIntermittent()) {
                         // logger.warn(technology + "in " + node.getName() +
@@ -478,7 +460,9 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
                         // Store NPV in the PowerplantTechnology
                         // technology.setNetPresentValue(projectValue /
                         // plant.getActualNominalCapacity());
-                        setNetPresentValue(technology, (capacityBid / plant.getActualNominalCapacity()));
+                        // setNetPresentValue(technology, (capacityBid /
+                        // (plant.getActualNominalCapacity() / plant
+                        // .getTechnology().getPeakSegmentDependentAvailability())));
 
                         if (projectValue > 0 && projectValue / plant.getActualNominalCapacity() > highestValue) {
                             highestValue = projectValue / plant.getActualNominalCapacity();
@@ -519,33 +503,41 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
 
             // Create CapacityDispatchPlan for all power plant technologies with
             // NPV + CONE is greater than equal to 0
-
-            Regulator reg = reps.regulatorRepository.findRegulatorForZone(market.getZone());
-            if ((agent.isSimpleCapacityMarketEnabled()) && (reg != null)) {
-                CapacityMarket capacityMarket = reps.capacityMarketRepository.findCapacityMarketForZone(market
-                        .getZone());
-
-                double capacityMarketCap = capacityMarket.getRegulator().getCapacityMarketPriceCap();
-
-                for (PowerGeneratingTechnology technology : reps.genericRepository
-                        .findAll(PowerGeneratingTechnology.class)) {
-
-                    if (technology.getExpectedLeadtime() + technology.getExpectedPermittime() <= reg.getTargetPeriod()
-                            && technology.getNetPresentValue() > 0
-                            && technology.getNetPresentValue() <= capacityMarketCap) {
-
-                        // logger.warn("1 NPV Tech " +
-                        // technology.getNetPresentValue());
-
-                        PowerPlant plant = new PowerPlant();
-                        plant.specifyAndPersist(getCurrentTick(), agent, getNodeForZone(market.getZone()), technology,
-                                true);
-                        updateCapacityMarketBidPrice(plant, technology.getNetPresentValue());
-                        plant.persist();
-                    }
-
-                }
-            }
+            //
+            // Regulator reg =
+            // reps.regulatorRepository.findRegulatorForZone(market.getZone());
+            // if ((agent.isSimpleCapacityMarketEnabled()) && (reg != null)) {
+            // CapacityMarket capacityMarket =
+            // reps.capacityMarketRepository.findCapacityMarketForZone(market
+            // .getZone());
+            //
+            // double capacityMarketCap =
+            // capacityMarket.getRegulator().getCapacityMarketPriceCap();
+            //
+            // for (PowerGeneratingTechnology technology :
+            // reps.genericRepository
+            // .findAll(PowerGeneratingTechnology.class)) {
+            //
+            // if (technology.getExpectedLeadtime() +
+            // technology.getExpectedPermittime() <= reg.getTargetPeriod()
+            // && technology.getNetPresentValue() > 0
+            // && technology.getNetPresentValue() <= capacityMarketCap) {
+            //
+            // // logger.warn("1 NPV Tech " +
+            // // technology.getNetPresentValue());
+            //
+            // PowerPlant plant = new PowerPlant();
+            // plant.specifyAndPersist(getCurrentTick(), agent,
+            // getNodeForZone(market.getZone()), technology,
+            // true);
+            // updateCapacityMarketBidPrice(plant,
+            // technology.getNetPresentValue());
+            // setTempPowerPlantStatus(plant);
+            // plant.persist();
+            // }
+            //
+            // }
+            // }
 
             // logger.warn("{} found no suitable technology anymore to invest in at tick "
             // + getCurrentTick(), agent);
@@ -583,6 +575,11 @@ public class InvestInPowerGenerationTechnologiesStandard<T extends EnergyProduce
     @Transactional
     private void updateCapacityMarketBidPrice(PowerPlant plant, double price) {
         plant.setCapacityMarketBidPrice(price);
+    }
+
+    @Transactional
+    private void setTempPowerPlantStatus(PowerPlant plant) {
+        plant.setTemporaryPlantforCapacityMarketBid(true);
     }
 
     /**

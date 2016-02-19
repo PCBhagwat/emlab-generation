@@ -98,6 +98,15 @@ public class PowerPlant {
     private double longtermcapacitycontractPrice;
     private double capacityMarketBidPrice;
     private long capacityMarketClearingYear;
+    private long capacityDeliveryYear;
+
+    public long getCapacityDeliveryYear() {
+        return capacityDeliveryYear;
+    }
+
+    public void setCapacityDeliveryYear(long capacityDeliveryYear) {
+        this.capacityDeliveryYear = capacityDeliveryYear;
+    }
 
     public long getCapacityMarketClearingYear() {
         return capacityMarketClearingYear;

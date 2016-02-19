@@ -217,7 +217,6 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                         && currentLifeTime > (regulator1.getCapacityMarketPermittedTimeForConstruction() * (-1))
                         && currentLifeTime < 0) {
 
-                    logger.warn("1 Owner " + plant3.getName());
                     unbuiltCapacity = unbuiltCapacity + plant3.getTechnology().getCapacity()
                             * plant3.getTechnology().getPeakSegmentDependentAvailability();
 
@@ -225,18 +224,20 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                 if (plant3.getOwner().equals(reps.targetInvestorRepository.findTargetInvestorByMarket(market))
                         && currentLifeTime > (regulator1.getCapacityMarketPermittedTimeForConstruction() * (-1))
                         && currentLifeTime < 0) {
-                    logger.warn("2 Owner " + plant3.getOwner());
                     unbuiltRESCapacity = unbuiltRESCapacity + plant3.getTechnology().getCapacity()
                             * plant3.getTechnology().getPeakSegmentDependentAvailability();
                 }
 
             }
-            logger.warn("Total  " + unbuiltCapacity + " RES  " + unbuiltRESCapacity);
             for (PowerPlant plant : reps.powerPlantRepository
                     .findOperationalPowerPlantsByAscendingProfitabilityAndMarket(market, getCurrentTick())) {
                 // logger.warn("profitability " + plant.getProfitability());
+                // logger.warn("Target Year " +
+                // plant.getCapacityDeliveryYear());
 
-                if (plant.getProfitability() < 0) {
+                if (plant.getProfitability() < 0 && plant.isHasLongtermCapacityMarketContract() == false
+                        && plant.getCapacityDeliveryYear() < getCurrentTick()) {
+                    logger.warn("Capacity Year: " + plant.getCapacityDeliveryYear());
 
                     double totalProfit = 0;
                     long lookforward = 1;
@@ -268,38 +269,6 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
 
                         demandGrowthFactor = (market.getDemandGrowthTrend().getValue((getCurrentTick() + iterator)));
                     }
-
-                    double range = 0;
-
-                    if ((getCurrentTick() + iterator) == 1) {
-                        double max = reps.powerPlantRepository.calculateBaseCapacityOfOperationalPowerPlantsInMarket(
-                                market, (getCurrentTick() + iterator));
-                        double min = reps.powerPlantRepository.calculatePeakCapacityOfOperationalPowerPlantsInMarket(
-                                market, (getCurrentTick() + iterator));
-
-                        range = ((max + min) / 2);
-
-                    }
-
-                    if ((getCurrentTick() + iterator) > 1) {
-                        SimpleRegression sr = new SimpleRegression();
-                        for (long time = (getCurrentTick() + iterator) - 1; time >= (getCurrentTick() + iterator)
-                                - market.getBacklookingForDemandForecastinginDismantling()
-                                && time >= 0; time = time - 1) {
-
-                            double max = reps.powerPlantRepository
-                                    .calculateBaseCapacityOfOperationalPowerPlantsInMarket(market, time);
-                            double min = reps.powerPlantRepository
-                                    .calculatePeakCapacityOfOperationalPowerPlantsInMarket(market, time);
-
-                            sr.addData(time, ((max + min) / 2));
-
-                        }
-
-                        range = (sr.predict((getCurrentTick() + iterator)));
-                    }
-
-                    // * ((100 + r.nextGaussian() * 20) / 100);
 
                     double reservePrice = 0;
                     double reserveVolume = 0;
@@ -392,10 +361,14 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                     // &&
                     // yIterator > 0; yIterator++) {
                     // counter += 1;
+                    Zone zoneTemp = market.getZone();
+                    Regulator regulator = reps.regulatorRepository.findRegulatorForZone(zoneTemp);
+                    long capabilityYear = 0;
+                    capabilityYear = getCurrentTick() + regulator.getTargetPeriod();
 
                     TargetInvestor tInvestor = reps.targetInvestorRepository.findTargetInvestorByMarket(market);
                     for (PowerPlant resPlant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(tInvestor,
-                            getCurrentTick())) {
+                            capabilityYear)) {
                         resPeakCapacity = resPeakCapacity
                                 + (resPlant.getActualNominalCapacity() * resPlant.getTechnology()
                                         .getPeakSegmentDependentAvailability());
@@ -403,14 +376,14 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
 
                     double totalPeakCapacityAtFuturePoint = (reps.powerPlantRepository
                             .calculatePeakCapacityOfOperationalPowerPlantsInMarket(market, getCurrentTick()))
-                            - longtermContractedCapacity - resPeakCapacity + unbuiltCapacity - unbuiltRESCapacity;
-                    double totalPeakDemandAtFuturePoint = (reps.segmentLoadRepository.peakLoadbyMarketandTime(market,
-                            getCurrentTick())) - longtermContractedCapacity - resPeakCapacity;
+                            - longtermContractedCapacity - resPeakCapacity + unbuiltCapacity;
 
-                    Zone zoneTemp = market.getZone();
-                    Regulator regulator = reps.regulatorRepository.findRegulatorForZone(zoneTemp);
-                    if ((plant.isHasLongtermCapacityMarketContract() == false
-                            && plant.getOwner().isSimpleCapacityMarketEnabled() == true && regulator != null)) {
+                    double totalPeakDemandAtFuturePoint = (reps.segmentLoadRepository.peakLoadbyMarketandTime(market,
+                            capabilityYear)) - longtermContractedCapacity - resPeakCapacity;
+
+                    // logger.warn("B Demand " + totalPeakDemandAtFuturePoint);
+
+                    if ((plant.getOwner().isSimpleCapacityMarketEnabled() == true && regulator != null)) {
                         if (totalPeakCapacityAtFuturePoint < totalPeakDemandAtFuturePoint
                                 * (1 + (regulator.getReserveMargin() - regulator.getReserveDemandLowerMargin()))) {
                             cmRevenue = plant.getTechnology().getCapacity()
@@ -443,17 +416,6 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                             cmRevenue = 0;
                             // logger.warn("3 CP " + cmRevenue);
                         }
-                    } else {
-                        if (plant.isHasLongtermCapacityMarketContract() == true) {
-                            cmRevenue = (plant.getLongtermcapacitycontractPrice())
-                                    * plant.getTechnology().getCapacity()
-                                    * plant.getTechnology().getPeakSegmentDependentAvailability();
-                            // logger.warn("4 CP " +
-                            // plant.getLongtermcapacitycontractPrice());
-                        } else {
-                            // logger.warn("5 CP " + cmRevenue);
-                            cmRevenue = 0;
-                        }
                     }
                     if (reserveVolume > 0.01) {
                         double counterReserve = 0;
@@ -482,14 +444,18 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                         }
 
                     }
-
+                    // logger.warn("5 CP "
+                    // + cmRevenue
+                    // / (plant.getTechnology().getCapacity() *
+                    // plant.getTechnology()
+                    // .getPeakSegmentDependentAvailability()));
                     totalProfit = ((sumProfit + (cmRevenue) - OM));
+                    logger.warn("cmRevenue  " + cmRevenue);
 
                     // logger.warn("1 Before Clearing Yr " +
                     // plant.getCapacityMarketClearingYear());
 
-                    if ((totalProfit) < 0 && plant.isHasLongtermCapacityMarketContract() != true
-                            && (plant.getActualLifetime() > 0)) {
+                    if ((totalProfit) < 0 && (plant.getActualLifetime() > 0)) {
                         // logger.warn("2 Before Clearing Yr " +
                         // plant.getCapacityMarketClearingYear());
                         // REMAINING LOAN-----//
@@ -534,7 +500,7 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                                         downpayment);
                             }
                         }
-                        logger.warn("dismantled " + plant.getActualLifetime());
+                        logger.warn("Dismantled " + plant.getName());
                         plant.dismantlePowerPlant(getCurrentTick());
 
                     }

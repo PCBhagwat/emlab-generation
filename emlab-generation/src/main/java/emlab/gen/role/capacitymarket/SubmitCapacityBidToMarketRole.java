@@ -15,7 +15,6 @@
  ******************************************************************************/
 package emlab.gen.role.capacitymarket;
 
-import org.apache.commons.math.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,8 +60,10 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
         for (PowerPlant plant : reps.powerPlantRepository.findPowerPlantsByOwner(producer)) {
             // Create PPDPs only for existing and under construction plants UK
             // Market
-
-            long currentLifeTime = getCurrentTick() - plant.getConstructionStartTime()
+            // logger.warn("A Plant LT: " +
+            // plant.isHasLongtermCapacityMarketContract());
+            long currentLifeTime = 0;
+            currentLifeTime = getCurrentTick() - plant.getConstructionStartTime()
                     - plant.getTechnology().getExpectedLeadtime() - plant.getTechnology().getExpectedPermittime();
 
             if (plant.isTemporaryPlantforCapacityMarketBid() == false
@@ -76,7 +77,8 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
 
                 CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
                 plan.specifyAndPersist(plant, producer, market, getCurrentTick(), plant.getActualFixedOperatingCost()
-                        / plant.getTechnology().getCapacity(), capacity, Bid.SUBMITTED);
+                        / (plant.getTechnology().getCapacity() * plant.getTechnology()
+                                .getPeakSegmentDependentAvailability()), capacity, Bid.SUBMITTED);
 
             }
 
@@ -105,7 +107,9 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                         mc = calculateMarginalCostExclCO2MarketCost(plant, getCurrentTick());
                     }
 
-                    double fixedOnMCost = plant.getActualFixedOperatingCost() / plant.getTechnology().getCapacity();
+                    double fixedOnMCost = plant.getActualFixedOperatingCost()
+                            / (plant.getTechnology().getCapacity() * plant.getTechnology()
+                                    .getPeakSegmentDependentAvailability());
 
                     // logger.warn("Bid calculation for PowerPlant " +
                     // plant.getName());
@@ -114,39 +118,57 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                     // logger.warn("CapacityMarket is  " + market.getName());
 
                     for (SegmentLoad segmentLoad : eMarket.getLoadDurationCurve()) {
-                        SimpleRegression sr = new SimpleRegression();
                         double segmentClearingPoint = 0;
-                        long time = 0l;
-                        for (time = getCurrentTick() - 1; time > getCurrentTick()
-                                - plant.getOwner().getNumberOfYearsBacklookingForForecasting()
-                                && time > 0; time = time - 1) {
 
-                            double eprice = 0;
-
-                            eprice = reps.segmentClearingPointRepository
-                                    .findSegmentClearingPointForMarketSegmentAndTime(time, segmentLoad.getSegment(),
-                                            eMarket, false).getPrice();
-                            sr.addData(time, eprice);
-
-                        }
-                        if (getCurrentTick() > 2) {
-                            double tempSCP = (sr.predict(getCurrentTick()));
-                            if (tempSCP < 0) {
-                                segmentClearingPoint = 0;
-                            } else {
-                                segmentClearingPoint = (sr.predict(getCurrentTick()));
-                            }
-
+                        if (getCurrentTick() > 0) {
+                            segmentClearingPoint = reps.segmentClearingPointRepository
+                                    .findSegmentClearingPointForMarketSegmentAndTime(getCurrentTick() - 1,
+                                            segmentLoad.getSegment(), eMarket, false).getPrice();
                         } else {
-                            if (getCurrentTick() <= 2 && getCurrentTick() > 0) {
-                                segmentClearingPoint = reps.segmentClearingPointRepository
-                                        .findSegmentClearingPointForMarketSegmentAndTime(getCurrentTick() - 1,
-                                                segmentLoad.getSegment(), eMarket, false).getPrice();
-                            }
                             if (getCurrentTick() == 0) {
                                 segmentClearingPoint = 0;
                             }
+
                         }
+                        //
+                        // SimpleRegression sr = new SimpleRegression();
+                        // long time = 0l;
+                        // for (time = getCurrentTick() - 1; time >
+                        // getCurrentTick()
+                        // -
+                        // plant.getOwner().getNumberOfYearsBacklookingForForecasting()
+                        // && time > 0; time = time - 1) {
+                        //
+                        // double eprice = 0;
+                        //
+                        // eprice = reps.segmentClearingPointRepository
+                        // .findSegmentClearingPointForMarketSegmentAndTime(time,
+                        // segmentLoad.getSegment(),
+                        // eMarket, false).getPrice();
+                        // sr.addData(time, eprice);
+                        //
+                        // }
+                        // if (getCurrentTick() > 2) {
+                        // double tempSCP = (sr.predict(getCurrentTick()));
+                        // if (tempSCP < 0) {
+                        // segmentClearingPoint = 0;
+                        // } else {
+                        // segmentClearingPoint =
+                        // (sr.predict(getCurrentTick()));
+                        // }
+                        //
+                        // } else {
+                        // if (getCurrentTick() <= 2 && getCurrentTick() > 0) {
+                        // segmentClearingPoint =
+                        // reps.segmentClearingPointRepository
+                        // .findSegmentClearingPointForMarketSegmentAndTime(getCurrentTick()
+                        // - 1,
+                        // segmentLoad.getSegment(), eMarket, false).getPrice();
+                        // }
+                        // if (getCurrentTick() == 0) {
+                        // segmentClearingPoint = 0;
+                        // }
+                        // }
 
                         double plantLoadFactor = ((plant.getTechnology().getPeakSegmentDependentAvailability()) + (((plant
                                 .getTechnology().getBaseSegmentDependentAvailability() - plant.getTechnology()
@@ -163,7 +185,8 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
 
                     }
 
-                    netRevenues = (expectedElectricityRevenues / plant.getActualNominalCapacity()) - fixedOnMCost;
+                    netRevenues = (expectedElectricityRevenues / (plant.getActualNominalCapacity() * plant
+                            .getTechnology().getPeakSegmentDependentAvailability())) - fixedOnMCost;
                     if (getCurrentTick() > 0) {
                         if (netRevenues >= 0) {
                             bidPrice = 0d;
@@ -178,6 +201,7 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
                     }
                     double capacity = plant.getActualNominalCapacity()
                             * plant.getTechnology().getPeakSegmentDependentAvailability();
+
                     CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
                     plan.specifyAndPersist(plant, producer, market, getCurrentTick(), bidPrice, capacity, Bid.SUBMITTED);
 
@@ -189,19 +213,22 @@ public class SubmitCapacityBidToMarketRole extends AbstractEnergyProducerRole<En
 
                 }
             }
-            if (plant.isTemporaryPlantforCapacityMarketBid() == true) {
-                // logger.warn("enters loop " +
-                // plant.isTemporaryPlantforCapacityMarketBid());
-                double capacity = plant.getTechnology().getCapacity()
-                        * plant.getTechnology().getPeakSegmentDependentAvailability();
-                CapacityMarket market = reps.capacityMarketRepository.findCapacityMarketForZone(plant.getLocation()
-                        .getZone());
-
-                CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
-                plan.specifyAndPersist(plant, producer, market, getCurrentTick(), plant.getCapacityMarketBidPrice(),
-                        capacity, Bid.SUBMITTED);
-
-            }
+            // if (plant.isTemporaryPlantforCapacityMarketBid() == true) {
+            // // logger.warn("enters loop " +
+            // // plant.getCapacityMarketBidPrice());
+            // double capacity = plant.getTechnology().getCapacity()
+            // * plant.getTechnology().getPeakSegmentDependentAvailability();
+            // CapacityMarket market =
+            // reps.capacityMarketRepository.findCapacityMarketForZone(plant.getLocation()
+            // .getZone());
+            //
+            // CapacityDispatchPlan plan = new CapacityDispatchPlan().persist();
+            // plan.specifyAndPersist(plant, producer, market, getCurrentTick(),
+            // (plant.getCapacityMarketBidPrice() +
+            // (plant.getActualFixedOperatingCost() / capacity)),
+            // capacity, Bid.SUBMITTED);
+            //
+            // }
         }
     }
 }
