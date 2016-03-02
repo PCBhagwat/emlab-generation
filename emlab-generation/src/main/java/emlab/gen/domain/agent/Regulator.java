@@ -56,8 +56,30 @@ public class Regulator extends DecarbonizationAgent implements Agent {
 
     private int numberOfYearsLookingBackToForecastDemand;
 
+    @SimulationParameter(label = " Construction Phase Permittance ", from = 0, to = 10)
+    private long capacityMarketTimePermittedForConstruction;
+
+    @SimulationParameter(label = " Long term contract duration ", from = 0, to = 25)
+    private long longTermCapacityContractPeriod;
+
     @RelatedTo(type = "OF_ZONE", elementClass = Zone.class, direction = Direction.OUTGOING)
     private Zone zone;
+
+    public long getLongTermCapacityContractPeriod() {
+        return longTermCapacityContractPeriod;
+    }
+
+    public void setLongTermCapacityContractPeriod(long longTermCapacityContractPeriod) {
+        this.longTermCapacityContractPeriod = longTermCapacityContractPeriod;
+    }
+
+    public long getCapacityMarketTimePermittedForConstruction() {
+        return capacityMarketTimePermittedForConstruction;
+    }
+
+    public void setCapacityMarketTimePermittedForConstruction(long capacityMarketTimePermittedForConstruction) {
+        this.capacityMarketTimePermittedForConstruction = capacityMarketTimePermittedForConstruction;
+    }
 
     public double getInitialSupplyMargin() {
         return initialSupplyMargin;

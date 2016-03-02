@@ -25,6 +25,7 @@ import emlab.gen.domain.market.ClearingPoint;
 import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
+import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.Reps;
 import emlab.gen.role.market.AbstractMarketRole;
 
@@ -49,29 +50,46 @@ public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarket
 
         for (CapacityDispatchPlan plan : reps.capacityMarketRepository.findAllAcceptedCapacityDispatchPlansForTime(
                 capacityMarket, getCurrentTick())) {
+            if (plan.getPlant().isHasLongtermCapacityContracts() != true) {
 
-            // logger.warn("Hi");
-            // logger.warn("cdp for plant" + plan.getPlant());
+                // logger.warn("Hi");
+                // logger.warn("cdp for plant" + plan.getPlant());
 
-            ClearingPoint capacityClearingPoint = reps.capacityMarketRepository
-                    .findOneClearingPointForTimeAndCapacityMarket(getCurrentTick(), capacityMarket);
+                ClearingPoint capacityClearingPoint = reps.capacityMarketRepository
+                        .findOneClearingPointForTimeAndCapacityMarket(getCurrentTick(), capacityMarket);
 
-            // logger.warn("capacity clearing point " +
-            // capacityClearingPoint.getPrice());
-            // double price = capacityClearingPoint.getPrice();
-            ElectricitySpotMarket esm = reps.marketRepository
-                    .findElectricitySpotMarketForZone(capacityMarket.getZone());
-            // logger.warn("esmt " + esm.getName());
+                // logger.warn("capacity clearing point " +
+                // capacityClearingPoint.getPrice());
+                // double price = capacityClearingPoint.getPrice();
+                ElectricitySpotMarket esm = reps.marketRepository.findElectricitySpotMarketForZone(capacityMarket
+                        .getZone());
+                // logger.warn("esmt " + esm.getName());
 
-            reps.nonTransactionalCreateRepository.createCashFlow(esm, plan.getBidder(), plan.getAcceptedAmount()
-                    * capacityClearingPoint.getPrice(), CashFlow.SIMPLE_CAPACITY_MARKET, getCurrentTick(),
-                    plan.getPlant());
-            // logger.warn("Cash flow from consumer {} to Producer {} of value {} "
-            // + plan.getAcceptedAmount()
-            // * capacityClearingPoint.getPrice(), plan.getBidder(),
-            // capacityMarket.getConsumer());
+                reps.nonTransactionalCreateRepository.createCashFlow(esm, plan.getBidder(), plan.getAcceptedAmount()
+                        * capacityClearingPoint.getPrice(), CashFlow.SIMPLE_CAPACITY_MARKET, getCurrentTick(),
+                        plan.getPlant());
+                // logger.warn("Cash flow from consumer {} to Producer {} of value {} "
+                // + plan.getAcceptedAmount()
+                // * capacityClearingPoint.getPrice(), plan.getBidder(),
+                // capacityMarket.getConsumer());
+            }
         }
-
+        for (PowerPlant plant : reps.powerPlantRepository.findAll()) {
+            if (plant.isHasLongtermCapacityContracts() == true) {
+                reps.nonTransactionalCreateRepository.createCashFlow(
+                        capacityMarket,
+                        plant.getOwner(),
+                        plant.getActualNominalCapacity()
+                                * (plant.getTechnology().getPeakSegmentDependentAvailability())
+                                * plant.getLongtermCapacityContractPrice(), CashFlow.SIMPLE_CAPACITY_MARKET,
+                        getCurrentTick(), plant);
+                double capacityPeriod = plant.getCapacityContractPeriod() - 1;
+                updateLongTermContractPeriod(plant, capacityPeriod);
+                if (plant.getCapacityContractPeriod() <= 0) {
+                    updateLongTermContractStatus(plant, false);
+                }
+            }
+        }
     }
 
     /*
@@ -84,6 +102,16 @@ public class PaymentFromConsumerToProducerForCapacityRole extends AbstractMarket
 
         return reps;
 
+    }
+
+    @Transactional
+    private void updateLongTermContractPeriod(PowerPlant plant, double Period) {
+        plant.setCapacityContractPeriod(Period);
+    }
+
+    @Transactional
+    private void updateLongTermContractStatus(PowerPlant plant, boolean status) {
+        plant.setHasLongtermCapacityContracts(status);
     }
 
 }

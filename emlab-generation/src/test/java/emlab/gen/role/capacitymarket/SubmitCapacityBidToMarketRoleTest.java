@@ -27,6 +27,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import emlab.gen.domain.agent.EnergyProducer;
+import emlab.gen.domain.agent.Regulator;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.capacity.CapacityMarket;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
@@ -60,6 +61,7 @@ public class SubmitCapacityBidToMarketRoleTest {
     @Test
     public void testSubmitBidFunctionality1() {
         // for bidding a positive value
+
         Segment S1 = new Segment();
         S1.setLengthInHours(20);
         S1.setSegmentID(1);
@@ -138,12 +140,20 @@ public class SubmitCapacityBidToMarketRoleTest {
 
         PowerGeneratingTechnology coal1 = new PowerGeneratingTechnology();
         coal1.setFixedOperatingCostTimeSeries(coalFixedOperatingCostTimeSeries);
+        coal1.setExpectedLeadtime(0);
+        coal1.setExpectedPermittime(0);
         PowerGeneratingTechnology coal2 = new PowerGeneratingTechnology();
         coal2.setFixedOperatingCostTimeSeries(coalFixedOperatingCostTimeSeries);
+        coal2.setExpectedLeadtime(0);
+        coal2.setExpectedPermittime(0);
         PowerGeneratingTechnology gas1 = new PowerGeneratingTechnology();
         gas1.setFixedOperatingCostTimeSeries(gasFixedOperatingCostTimeSeries);
+        gas1.setExpectedLeadtime(0);
+        gas1.setExpectedPermittime(0);
         PowerGeneratingTechnology gas2 = new PowerGeneratingTechnology();
         gas2.setFixedOperatingCostTimeSeries(gasFixedOperatingCostTimeSeries);
+        gas2.setExpectedLeadtime(0);
+        gas2.setExpectedPermittime(0);
 
         coal1.persist();
         coal2.persist();
@@ -164,6 +174,11 @@ public class SubmitCapacityBidToMarketRoleTest {
 
         e1.persist();
         e2.persist();
+
+        Regulator Reg = new Regulator();
+        Reg.setTargetPeriod(0);
+        Reg.setZone(zone);
+        Reg.persist();
 
         PowerPlant pp1 = new PowerPlant();
         pp1.setName("plant 1");

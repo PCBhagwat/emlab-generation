@@ -27,6 +27,7 @@ import emlab.gen.domain.market.Bid;
 import emlab.gen.domain.market.capacity.CapacityClearingPoint;
 import emlab.gen.domain.market.capacity.CapacityDispatchPlan;
 import emlab.gen.domain.market.capacity.CapacityMarket;
+import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.Reps;
 
 /**
@@ -81,6 +82,9 @@ public class ClearCapacityMarketNewRole extends AbstractRole<Regulator> implemen
         for (CapacityDispatchPlan currentCDP : reps.capacityMarketRepository
                 .findAllSortedCapacityDispatchPlansByTime(getCurrentTick())) {
             totalVolumeBid = totalVolumeBid + currentCDP.getAmount();
+            // logger.warn(" Name " +
+            // currentCDP.getPlant().getTechnology().getName() + " Bid " +
+            // currentCDP.getPrice());
         }
         logger.warn("2 TotVol "
                 + totalVolumeBid
@@ -189,5 +193,33 @@ public class ClearCapacityMarketNewRole extends AbstractRole<Regulator> implemen
 
         }
 
+        for (CapacityDispatchPlan plan : reps.capacityMarketRepository.findAllAcceptedCapacityDispatchPlansForTime(
+                market, getCurrentTick())) {
+
+            updatePlantsClearedforLongTermContracts(plan, clearingPoint, regulator);
+            updateCapacityDeliveryYear(plan.getPlant(), regulator);
+
+        }
+    }
+
+    @Transactional
+    private void updateCapacityDeliveryYear(PowerPlant plant, Regulator regulator) {
+        plant.setCapacityMarketDeliveryYear(getCurrentTick() + regulator.getTargetPeriod());
+    }
+
+    @Transactional
+    private void updatePlantsClearedforLongTermContracts(CapacityDispatchPlan plan,
+            CapacityClearingPoint clearingPoint, Regulator regulator) {
+        long currentLifeTime = getCurrentTick() - plan.getPlant().getConstructionStartTime()
+                - plan.getPlant().getTechnology().getExpectedLeadtime()
+                - plan.getPlant().getTechnology().getExpectedPermittime();
+        if (currentLifeTime <= 0 && plan.getPlant().isHasLongtermCapacityContracts() != true) {
+            plan.getPlant().setLongtermCapacityContractPrice(clearingPoint.getPrice());
+            plan.getPlant().setCapacityContractPeriod(regulator.getLongTermCapacityContractPeriod());
+            plan.getPlant().setHasLongtermCapacityContracts(true);
+            plan.getPlant().persist();
+            // logger.warn(" Accepted Bid " + plan.getPrice() + " Name " +
+            // plan.getPlant());
+        }
     }
 }

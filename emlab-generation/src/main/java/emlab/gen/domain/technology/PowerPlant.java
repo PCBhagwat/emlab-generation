@@ -35,10 +35,10 @@ import emlab.gen.repository.PowerPlantDispatchPlanRepository;
 
 /**
  * Representation of a power plant
- *
+ * 
  * @author jcrichstein
  * @author ejlchappin
- *
+ * 
  */
 
 @Configurable
@@ -90,6 +90,63 @@ public class PowerPlant {
 
     public double ageFraction;
     public double profitability;
+
+    // Additions for long term contracts
+
+    private boolean hasLongtermCapacityContracts;
+    private double capacityContractPeriod;
+    private double longtermCapacityContractPrice;
+    private double capacityMarketBidPrice;
+    private long capacityMarketClearingYear;
+    private long capacityMarketDeliveryYear;
+
+    public boolean isHasLongtermCapacityContracts() {
+        return hasLongtermCapacityContracts;
+    }
+
+    public void setHasLongtermCapacityContracts(boolean hasLongtermCapacityContracts) {
+        this.hasLongtermCapacityContracts = hasLongtermCapacityContracts;
+    }
+
+    public double getCapacityContractPeriod() {
+        return capacityContractPeriod;
+    }
+
+    public void setCapacityContractPeriod(double capacityContractPeriod) {
+        this.capacityContractPeriod = capacityContractPeriod;
+    }
+
+    public double getLongtermCapacityContractPrice() {
+        return longtermCapacityContractPrice;
+    }
+
+    public void setLongtermCapacityContractPrice(double longtermCapacityContractPrice) {
+        this.longtermCapacityContractPrice = longtermCapacityContractPrice;
+    }
+
+    public double getCapacityMarketBidPrice() {
+        return capacityMarketBidPrice;
+    }
+
+    public void setCapacityMarketBidPrice(double capacityMarketBidPrice) {
+        this.capacityMarketBidPrice = capacityMarketBidPrice;
+    }
+
+    public long getCapacityMarketClearingYear() {
+        return capacityMarketClearingYear;
+    }
+
+    public void setCapacityMarketClearingYear(long capacityMarketClearingYear) {
+        this.capacityMarketClearingYear = capacityMarketClearingYear;
+    }
+
+    public long getCapacityMarketDeliveryYear() {
+        return capacityMarketDeliveryYear;
+    }
+
+    public void setCapacityMarketDeliveryYear(long capacityMarketDeliveryYear) {
+        this.capacityMarketDeliveryYear = capacityMarketDeliveryYear;
+    }
 
     public double getProfitability() {
         return profitability;
@@ -274,7 +331,7 @@ public class PowerPlant {
      * Determines whether a plant is still in its technical lifetime. The end of
      * the technical lifetime is determined by the construction start time, the
      * permit time, the lead time and the actual lifetime.
-     *
+     * 
      * @param currentTick
      * @return whether the plant is still in its technical lifetime.
      */
@@ -417,7 +474,7 @@ public class PowerPlant {
      * Sets the actual capital that is needed to build the power plant. It reads
      * the investment cost from the and automatically adjusts for the actual
      * building and permit time, as well as power plant size.
-     *
+     * 
      * @param timeOfPermitorBuildingStart
      */
     public void calculateAndSetActualInvestedCapital(long timeOfPermitorBuildingStart) {
@@ -476,15 +533,15 @@ public class PowerPlant {
     /**
      * Persists and specifies the properties of a new Power Plant (which needs
      * to be created separately before with new PowerPlant();
-     *
+     * 
      * Do not forget that any change made here should be reflected in the
      * ElectricityProducerFactory!!
-     *
+     * 
      * @param time
      * @param energyProducer
      * @param location
      * @param technology
-     *
+     * 
      * @author J.C.Richstein
      */
     @Transactional

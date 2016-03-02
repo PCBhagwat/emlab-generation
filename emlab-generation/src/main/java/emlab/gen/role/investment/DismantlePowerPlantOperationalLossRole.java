@@ -30,6 +30,7 @@ import emlab.gen.domain.agent.CommoditySupplier;
 import emlab.gen.domain.agent.Government;
 import emlab.gen.domain.agent.Regulator;
 import emlab.gen.domain.agent.StrategicReserveOperator;
+import emlab.gen.domain.agent.TargetInvestor;
 import emlab.gen.domain.contract.CashFlow;
 import emlab.gen.domain.contract.Loan;
 import emlab.gen.domain.gis.Zone;
@@ -207,8 +208,24 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
             for (PowerPlant plant : reps.powerPlantRepository
                     .findOperationalPowerPlantsByAscendingProfitabilityAndMarket(market, getCurrentTick())) {
                 // logger.warn("profitability " + plant.getProfitability());
+                // if (plant.getProfitability() < 0 &&
+                // plant.getCapacityMarketDeliveryYear() >= getCurrentTick()) {
+                // logger.warn("1 DelYr " +
+                // plant.getCapacityMarketDeliveryYear() + " plant " +
+                // plant.getTechnology()
+                // + " capacity " + plant.getActualNominalCapacity() + " LTC "
+                // + plant.isHasLongtermCapacityContracts());
+                // }
+                //
+                // if (plant.isHasLongtermCapacityContracts() == true) {
+                // logger.warn("2 DelYr " +
+                // plant.getCapacityMarketDeliveryYear() + " plant " +
+                // plant.getTechnology()
+                // + " capacity " + plant.getActualNominalCapacity());
+                // }
 
-                if (plant.getProfitability() < 0) {
+                if (plant.getProfitability() < 0 && plant.isHasLongtermCapacityContracts() != true
+                        && (plant.getCapacityMarketDeliveryYear()) < (getCurrentTick())) {
                     double totalProfit = 0;
                     long lookforward = 1;
                     long iterator = 0;
@@ -366,13 +383,39 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                     // yIterator > 0; yIterator++) {
                     // counter += 1;
 
-                    double totalPeakCapacityAtFuturePoint = reps.powerPlantRepository
-                            .calculatePeakCapacityOfOperationalPowerPlantsInMarket(market, getCurrentTick());
-                    double totalPeakDemandAtFuturePoint = reps.segmentLoadRepository.peakLoadbyMarketandTime(market,
-                            getCurrentTick());
+                    double longTermContractedCapacity = 0;
+
+                    for (PowerPlant plant1 : reps.powerPlantRepository.findPowerPlantsInMarket(market)) {
+                        if (plant1.isHasLongtermCapacityContracts() == true) {
+                            longTermContractedCapacity = longTermContractedCapacity
+                                    + (plant1.getActualNominalCapacity() * (plant1.getTechnology()
+                                            .getPeakSegmentDependentAvailability()));
+                        }
+                    }
+
+                    TargetInvestor tinvestor = reps.targetInvestorRepository.findTargetInvestorByMarket(market);
+                    double resPeakCapacity = 0;
+
+                    if (tinvestor != null) {
+                        for (PowerPlant resPlant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(
+                                tinvestor, getCurrentTick())) {
+                            resPeakCapacity = resPeakCapacity
+                                    + (resPlant.getActualNominalCapacity() * (resPlant.getTechnology()
+                                            .getPeakSegmentDependentAvailability()));
+                        }
+                    }
 
                     Zone zoneTemp = market.getZone();
                     Regulator regulator = reps.regulatorRepository.findRegulatorForZone(zoneTemp);
+
+                    double totalPeakCapacityAtFuturePoint = reps.powerPlantRepository
+                            .calculatePeakCapacityOfOperationalPowerPlantsInMarket(market,
+                                    (getCurrentTick() + regulator.getTargetPeriod()))
+                            - longTermContractedCapacity - resPeakCapacity;
+
+                    double totalPeakDemandAtFuturePoint = reps.segmentLoadRepository.peakLoadbyMarketandTime(market,
+                            getCurrentTick()) - longTermContractedCapacity - resPeakCapacity;
+
                     if ((plant.getOwner().isSimpleCapacityMarketEnabled() && regulator != null)) {
                         double phaseInPeriod = 0;
 
@@ -390,6 +433,8 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                             cmRevenue = plant.getTechnology().getCapacity()
                                     * plant.getTechnology().getPeakSegmentDependentAvailability()
                                     * regulator.getCapacityMarketPriceCap();
+                            // logger.warn(" 1 CC " +
+                            // regulator.getCapacityMarketPriceCap());
                         }
 
                         if ((totalPeakCapacityAtFuturePoint > (totalPeakDemandAtFuturePoint * (1 + (regulator
@@ -404,14 +449,20 @@ public class DismantlePowerPlantOperationalLossRole extends AbstractRole<Electri
                             cmRevenue = (-(marketCap / (upperMargin - lowerMargin)) * ((totalPeakCapacityAtFuturePoint / totalPeakDemandAtFuturePoint) - upperMargin))
                                     * plant.getTechnology().getCapacity()
                                     * plant.getTechnology().getPeakSegmentDependentAvailability();
+                            // logger.warn(" 2 CC "
+                            // + (-(marketCap / (upperMargin - lowerMargin)) *
+                            // ((totalPeakCapacityAtFuturePoint /
+                            // totalPeakDemandAtFuturePoint) - upperMargin)));
                         }
 
                         if (totalPeakCapacityAtFuturePoint > (totalPeakDemandAtFuturePoint * (1 + (regulator
                                 .getReserveMargin() - phaseInPeriod + regulator.getReserveDemandUpperMargin())))) {
                             cmRevenue = 0;
+                            // logger.warn(" 3 CC " + 0);
                         }
                     } else {
                         cmRevenue = 0;
+                        // logger.warn(" 4 CC " + 0);
                     }
                     if (reserveVolume > 0.01) {
                         double counterReserve = 0;

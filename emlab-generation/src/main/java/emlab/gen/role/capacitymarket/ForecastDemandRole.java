@@ -23,8 +23,10 @@ import agentspring.role.AbstractRole;
 import agentspring.role.Role;
 import agentspring.role.RoleComponent;
 import emlab.gen.domain.agent.Regulator;
+import emlab.gen.domain.agent.TargetInvestor;
 import emlab.gen.domain.gis.Zone;
 import emlab.gen.domain.market.electricity.ElectricitySpotMarket;
+import emlab.gen.domain.technology.PowerPlant;
 import emlab.gen.repository.Reps;
 
 /**
@@ -54,6 +56,28 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
         Zone zone = regulator.getZone();
         ElectricitySpotMarket market = reps.marketRepository.findElectricitySpotMarketForZone(zone);
 
+        double longTermContractedCapacity = 0;
+
+        for (PowerPlant plant : reps.powerPlantRepository.findPowerPlantsInMarket(market)) {
+            if (plant.isHasLongtermCapacityContracts() == true) {
+                longTermContractedCapacity = longTermContractedCapacity
+                        + (plant.getActualNominalCapacity() * (plant.getTechnology()
+                                .getPeakSegmentDependentAvailability()));
+            }
+        }
+
+        TargetInvestor tinvestor = reps.targetInvestorRepository.findTargetInvestorByMarket(market);
+        double resPeakCapacity = 0;
+
+        if (tinvestor != null) {
+            for (PowerPlant resPlant : reps.powerPlantRepository.findOperationalPowerPlantsByOwner(tinvestor,
+                    capabilityYear)) {
+                resPeakCapacity = resPeakCapacity
+                        + (resPlant.getActualNominalCapacity() * (resPlant.getTechnology()
+                                .getPeakSegmentDependentAvailability()));
+            }
+        }
+
         // double trend =
         // market.getDemandGrowthTrend().getValue(getCurrentTick());
         // double peakLoadforMarket = trend * peakLoadforMarketNOtrend;
@@ -69,7 +93,7 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
 
         double expectedDemandFactor = 0d;
         if (capabilityYear > getCurrentTick()) {
-            if (getCurrentTick() < 2) {
+            if (getCurrentTick() < 5) {
 
                 expectedDemandFactor = market.getDemandGrowthTrend().getValue(getCurrentTick());
             } else {
@@ -80,7 +104,7 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
                         && time >= 0; time = time - 1) {
                     sr.addData(time, market.getDemandGrowthTrend().getValue(time));
                 }
-                expectedDemandFactor = sr.predict(capabilityYear);
+                expectedDemandFactor = market.getDemandGrowthTrend().getValue(getCurrentTick());
             }
 
         } else {
@@ -94,7 +118,8 @@ public class ForecastDemandRole extends AbstractRole<Regulator> implements Role<
         double peakExpectedDemand = peakLoadforMarketNOtrend * expectedDemandFactor;
 
         // Compute demand target by multiplying reserve margin double double
-        double demandTarget = peakExpectedDemand * (1 + regulator.getReserveMargin() - phaseInPeriod);
+        double demandTarget = (peakExpectedDemand - longTermContractedCapacity - resPeakCapacity)
+                * (1 + regulator.getReserveMargin() - phaseInPeriod);
 
         regulator.setDemandTarget(demandTarget);
 
